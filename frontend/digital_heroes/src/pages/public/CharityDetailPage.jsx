@@ -172,7 +172,7 @@ const CharityDetailPage = () => {
 						<p style={{ fontWeight: 800, fontSize: 24 }}>supporting this charity</p>
 					</Card>
 					<Card padding={16}>
-						<p style={{ color: 'var(--color-text-secondary)' }}>£640 donated</p>
+						<p style={{ color: 'var(--color-text-secondary)' }}>$640 donated</p>
 						<p style={{ fontWeight: 800, fontSize: 24 }}>this month</p>
 					</Card>
 					<Card padding={16}>

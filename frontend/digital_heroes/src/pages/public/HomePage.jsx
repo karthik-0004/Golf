@@ -88,7 +88,7 @@ const CountUp = ({ value = 0, prefix = '', suffix = '' }) => {
   return (
     <span ref={triggerRef}>
       {prefix}
-      {display.toLocaleString('en-GB')}
+      {display.toLocaleString('en-US')}
       {suffix}
     </span>
   )
@@ -127,12 +127,12 @@ const HomePage = () => {
   }, [charitiesData])
 
   const monthlyPriceLabel = useMemo(() => {
-    if (!Array.isArray(plansData)) return '£X'
+    if (!Array.isArray(plansData)) return '$X'
     const monthly = plansData.find((plan) => plan.name === 'monthly')
-    if (!monthly?.price) return '£X'
-    return new Intl.NumberFormat('en-GB', {
+    if (!monthly?.price) return '$X'
+    return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'GBP',
+      currency: 'USD',
       minimumFractionDigits: 0,
       maximumFractionDigits: 2,
     }).format(Number(monthly.price))
@@ -192,11 +192,11 @@ const HomePage = () => {
           >
             <div className="prize-card glass">
               <p className="prize-card-title">This Month's Prize Pool</p>
-              <p className="prize-pool-number">£4,280</p>
+              <p className="prize-pool-number">$4,280</p>
               <div className="prize-tiers">
                 <p>🥇 5-Number Match — Jackpot (40%)</p>
-                <p>🥈 4-Number Match — £1,498 (35%)</p>
-                <p>🥉 3-Number Match — £1,070 (25%)</p>
+                <p>🥈 4-Number Match — $1,498 (35%)</p>
+                <p>🥉 3-Number Match — $1,070 (25%)</p>
               </div>
               <p className="prize-card-footer">Draw closes 31st March 2026</p>
             </div>
@@ -367,9 +367,9 @@ const HomePage = () => {
             <div className="stats-grid">
               {[
                 { value: 247, suffix: '+', label: 'Active Members' },
-                { value: 18400, prefix: '£', suffix: '+', label: 'Prizes Awarded' },
+                { value: 18400, prefix: '$', suffix: '+', label: 'Prizes Awarded' },
                 { value: 12, label: 'Charities Supported' },
-                { value: 2100, prefix: '£', suffix: '+', label: 'Donated to Charity' },
+                { value: 2100, prefix: '$', suffix: '+', label: 'Donated to Charity' },
               ].map((stat) => (
                 <div key={stat.label} className="stat-card">
                   <p className="stat-value">

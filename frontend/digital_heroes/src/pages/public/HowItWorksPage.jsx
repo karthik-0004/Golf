@@ -88,9 +88,9 @@ const HowItWorksPage = () => {
 					visual={
 						<div style={{ display: 'grid', gap: 8 }}>
 							<p style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>Pricing Preview</p>
-							<div style={{ border: '1px solid var(--color-border)', borderRadius: 10, padding: 12 }}>Monthly £9.99</div>
+							<div style={{ border: '1px solid var(--color-border)', borderRadius: 10, padding: 12 }}>Monthly $9.99</div>
 							<div style={{ border: '1px solid rgba(200,245,68,0.42)', borderRadius: 10, padding: 12, background: 'rgba(200,245,68,0.1)' }}>
-								Yearly £99.00
+								Yearly $99.00
 							</div>
 						</div>
 					}
@@ -166,7 +166,7 @@ const HowItWorksPage = () => {
 					visual={
 						<div style={{ border: '1px solid rgba(34,197,94,0.42)', borderRadius: 10, padding: 12, background: 'rgba(34,197,94,0.12)' }}>
 							<p style={{ fontWeight: 700, color: '#86efac' }}>🏆 You Won!</p>
-							<p style={{ fontSize: 26, color: 'var(--color-accent)', fontWeight: 800 }}>£485.00</p>
+							<p style={{ fontSize: 26, color: 'var(--color-accent)', fontWeight: 800 }}>$485.00</p>
 						</div>
 					}
 				/>

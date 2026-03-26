@@ -100,9 +100,9 @@ const SubscribePage = () => {
 	}, [plans.monthly?.price, plans.yearly?.price])
 
 	const formattedPrice = (value) =>
-		new Intl.NumberFormat('en-GB', {
+		new Intl.NumberFormat('en-US', {
 			style: 'currency',
-			currency: 'GBP',
+			currency: 'USD',
 			minimumFractionDigits: Number(value) % 1 ? 2 : 0,
 			maximumFractionDigits: 2,
 		}).format(Number(value || 0))

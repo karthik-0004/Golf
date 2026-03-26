@@ -63,7 +63,7 @@ const CharitiesPage = () => {
 
 					<div className="public-stats-row">
 						<span className="public-stat-chip">12 Charities</span>
-						<span className="public-stat-chip">£2,100+ Donated</span>
+						<span className="public-stat-chip">$2,100+ Donated</span>
 						<span className="public-stat-chip">247 Members Contributing</span>
 					</div>
 				</div>

@@ -16,6 +16,17 @@ from .serializers import CreateSubscriptionSerializer, SubscriptionPlanSerialize
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
 
+def _get_value(payload, key, default=None):
+    if payload is None:
+        return default
+    if isinstance(payload, dict):
+        return payload.get(key, default)
+    try:
+        return payload[key]
+    except (KeyError, TypeError):
+        return default
+
+
 class SubscriptionPlanListView(APIView):
     permission_classes = [AllowAny]
 
@@ -80,14 +91,15 @@ class StripeWebhookView(APIView):
         except (ValueError, stripe.error.SignatureVerificationError):
             return Response({"detail": "Invalid payload or signature."}, status=status.HTTP_400_BAD_REQUEST)
 
-        event_type = event.get("type")
-        data_object = event.get("data", {}).get("object", {})
+        event_type = _get_value(event, "type")
+        data = _get_value(event, "data", {})
+        data_object = _get_value(data, "object", {})
 
         if event_type == "checkout.session.completed":
-            metadata = data_object.get("metadata", {})
-            user_id = metadata.get("user_id")
-            plan_name = metadata.get("plan_name")
-            subscription_id = data_object.get("subscription")
+            metadata = _get_value(data_object, "metadata", {})
+            user_id = _get_value(metadata, "user_id")
+            plan_name = _get_value(metadata, "plan_name")
+            subscription_id = _get_value(data_object, "subscription")
 
             user = User.objects.filter(id=user_id).first()
             if user and plan_name in ["monthly", "yearly"]:
@@ -111,7 +123,7 @@ class StripeWebhookView(APIView):
                 )
 
         elif event_type == "customer.subscription.deleted":
-            subscription_id = data_object.get("id")
+            subscription_id = _get_value(data_object, "id")
             user = User.objects.filter(stripe_subscription_id=subscription_id).first()
             if user:
                 user.is_subscriber = False
@@ -126,7 +138,7 @@ class StripeWebhookView(APIView):
                 )
 
         elif event_type == "invoice.payment_failed":
-            customer_id = data_object.get("customer")
+            customer_id = _get_value(data_object, "customer")
             user = User.objects.filter(stripe_customer_id=customer_id).first()
             if user:
                 user.subscription_status = "lapsed"
@@ -134,7 +146,7 @@ class StripeWebhookView(APIView):
                 user.save(update_fields=["subscription_status", "is_subscriber"])
 
         elif event_type == "invoice.payment_succeeded":
-            customer_id = data_object.get("customer")
+            customer_id = _get_value(data_object, "customer")
             user = User.objects.filter(stripe_customer_id=customer_id).first()
             if user:
                 extension = timedelta(days=30) if user.subscription_plan == "monthly" else timedelta(days=365)
