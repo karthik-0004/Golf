@@ -1,0 +1,8 @@
+django-cors-headers==4.9.0
+django-storages==1.14.6
+djangorestframework==3.17.1
+djangorestframework-simplejwt==5.5.1
+pillow==12.1.1
+psycopg2-binary==2.9.11
+python-dotenv==1.2.2
+stripe==15.0.0

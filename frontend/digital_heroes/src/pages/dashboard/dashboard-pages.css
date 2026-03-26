@@ -1,0 +1,239 @@
+.dashboard-page {
+  display: grid;
+  gap: 22px;
+}
+
+.dashboard-header h1 {
+  font-size: clamp(26px, 4vw, 34px);
+  line-height: 1.1;
+}
+
+.dashboard-header p {
+  margin-top: 6px;
+  color: var(--color-text-secondary);
+}
+
+.dashboard-grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.dashboard-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.dashboard-card-title {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  margin-bottom: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dashboard-big-value {
+  font-size: clamp(24px, 3vw, 30px);
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.dashboard-subtle {
+  margin-top: 6px;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+
+.dashboard-link-inline {
+  color: var(--color-accent);
+  font-weight: 600;
+}
+
+.dashboard-section-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.dashboard-section-head h2 {
+  font-size: 20px;
+}
+
+.dashboard-pill-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.dashboard-score-pill {
+  min-width: 92px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-2);
+  padding: 10px 12px;
+  text-align: center;
+}
+
+.dashboard-score-pill strong {
+  display: block;
+  font-size: 28px;
+  color: var(--color-accent);
+}
+
+.dashboard-score-pill small {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+.dashboard-number-chip {
+  min-width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+}
+
+.dashboard-number-chip--accent {
+  border-color: rgba(200, 245, 68, 0.45);
+  color: var(--color-accent);
+  background: rgba(200, 245, 68, 0.12);
+}
+
+.dashboard-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.dashboard-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 700px;
+}
+
+.dashboard-table th,
+.dashboard-table td {
+  text-align: left;
+  padding: 12px;
+  border-bottom: 1px solid var(--color-border);
+  vertical-align: top;
+}
+
+.dashboard-table th {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.dashboard-table tr:last-child td {
+  border-bottom: none;
+}
+
+.dashboard-score-value {
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.dashboard-score-red {
+  color: #ef4444;
+}
+
+.dashboard-score-orange {
+  color: #f59e0b;
+}
+
+.dashboard-score-green {
+  color: #22c55e;
+}
+
+.dashboard-score-lime {
+  color: var(--color-accent);
+}
+
+.dashboard-empty {
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 18px;
+  color: var(--color-text-secondary);
+}
+
+.dashboard-badge-stack {
+  display: grid;
+  gap: 6px;
+}
+
+.dashboard-warning-box,
+.dashboard-info-box {
+  border-radius: var(--radius-md);
+  padding: 14px;
+}
+
+.dashboard-warning-box {
+  border: 1px solid rgba(245, 158, 11, 0.45);
+  background: rgba(245, 158, 11, 0.1);
+  color: #fbbf24;
+}
+
+.dashboard-info-box {
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  background: rgba(56, 189, 248, 0.08);
+  color: #7dd3fc;
+}
+
+.dashboard-loading,
+.dashboard-error {
+  min-height: 56vh;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  gap: 12px;
+}
+
+.dashboard-tab-row {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.dashboard-tab-btn {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  background: var(--color-surface-2);
+  color: var(--color-text-secondary);
+  padding: 7px 14px;
+}
+
+.dashboard-tab-btn--active {
+  border-color: rgba(200, 245, 68, 0.4);
+  color: var(--color-accent);
+  background: rgba(200, 245, 68, 0.12);
+}
+
+@media (max-width: 980px) {
+  .dashboard-grid-4,
+  .dashboard-grid-3 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .dashboard-grid-4,
+  .dashboard-grid-3 {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-score-pill {
+    min-width: 76px;
+  }
+}

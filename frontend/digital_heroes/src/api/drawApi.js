@@ -1,0 +1,27 @@
+import axiosClient from './axiosClient'
+
+export const getCurrentDraw = () => axiosClient.get('/draws/current/')
+export const getDrawHistory = () => axiosClient.get('/draws/history/')
+export const getMyEntries = () => axiosClient.get('/draws/my-entries/')
+export const getMyWinnings = () => axiosClient.get('/draws/my-winnings/')
+export const uploadProof = (id, data) => axiosClient.post(`/draws/upload-proof/${id}/`, data)
+
+export const adminGetDraws = () => axiosClient.get('/admin/draws/')
+export const adminCreateDraw = (data) => axiosClient.post('/admin/draws/', data)
+export const adminRunDraw = (id) => axiosClient.post(`/admin/draws/${id}/run/`)
+export const adminPublishDraw = (id) => axiosClient.post(`/admin/draws/${id}/publish/`)
+export const adminGetWinners = (params) => axiosClient.get('/admin/winners/', { params })
+export const adminVerifyWinner = (id, data) => axiosClient.post(`/admin/winners/${id}/verify/`, data)
+export const adminMarkPaid = (id) => axiosClient.post(`/admin/winners/${id}/mark-paid/`)
+export const adminGetAnalytics = () => axiosClient.get('/admin/analytics/')
+export const adminGetUsers = (params) => axiosClient.get('/admin/users/', { params })
+export const adminGetUserDetail = (id) => axiosClient.get(`/admin/users/${id}/`)
+export const adminUpdateUser = (id, data) => axiosClient.put(`/admin/users/${id}/`, data)
+export const adminGetUserScores = (id) => axiosClient.get(`/admin/users/${id}/scores/`)
+export const adminAddUserScore = (id, data) => axiosClient.post(`/admin/users/${id}/scores/`, data)
+export const adminDeleteUserScore = (id, scoreId) =>
+	axiosClient.delete(`/admin/users/${id}/scores/`, { data: { score_id: scoreId } })
+export const adminGetCharities = () => axiosClient.get('/admin/charities/')
+export const adminCreateCharity = (data) => axiosClient.post('/admin/charities/', data)
+export const adminUpdateCharity = (id, data) => axiosClient.put(`/admin/charities/${id}/`, data)
+export const adminDeleteCharity = (id) => axiosClient.delete(`/admin/charities/${id}/`)
