@@ -448,6 +448,7 @@ const AdminDrawsPage = () => {
             const winnerSummary = draw.winner_summary || { '5_match': 0, '4_match': 0, '3_match': 0 }
             const highlighted = drawIdFromQuery && drawIdFromQuery === draw.id
             const isManual = draw.draw_type === 'manual'
+            const drawTitle = typeof draw.title === 'string' ? draw.title.trim() : ''
 
             return (
               <Card
@@ -460,6 +461,11 @@ const AdminDrawsPage = () => {
                     <h3 style={{ fontSize: 24 }}>
                       {getMonthName(Number(draw.month || 1))} {draw.year}
                     </h3>
+                    {drawTitle ? (
+                      <p style={{ color: 'var(--color-text-secondary)', fontSize: 13, margin: '4px 0' }}>
+                        {drawTitle}
+                      </p>
+                    ) : null}
                     <Badge variant="info" style={{ marginTop: 6 }}>
                       {isManual ? '✏️ Manual' : '🎲 Random'}
                     </Badge>
