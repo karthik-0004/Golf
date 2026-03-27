@@ -9,6 +9,7 @@ export const uploadProof = (id, data) => axiosClient.post(`/draws/upload-proof/$
 export const adminGetDraws = () => axiosClient.get('/admin/draws/')
 export const adminCreateDraw = (data) => axiosClient.post('/admin/draws/', data)
 export const adminRunDraw = (id) => axiosClient.post(`/admin/draws/${id}/run/`)
+export const adminReenterDrawNumbers = (id, data) => axiosClient.post(`/admin/draws/${id}/reenter-numbers/`, data)
 export const adminPublishDraw = (id) => axiosClient.post(`/admin/draws/${id}/publish/`)
 export const adminGetWinners = (params) => axiosClient.get('/admin/winners/', { params })
 export const adminVerifyWinner = (id, data) => axiosClient.post(`/admin/winners/${id}/verify/`, data)

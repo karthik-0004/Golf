@@ -44,11 +44,9 @@ const withTransition = (component) => (
 )
 
 function App() {
-  const initializeAuth = useAuthStore((state) => state.initializeAuth)
-
   useEffect(() => {
-    initializeAuth()
-  }, [initializeAuth])
+    useAuthStore.getState().initializeAuth()
+  }, [])
 
   return (
     <QueryClientProvider client={queryClient}>

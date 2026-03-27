@@ -77,9 +77,17 @@ const AdminUsersPage = () => {
 		return query
 	}, [debouncedSearch, subscriberFilter])
 
-	const usersQuery = useQuery({
+	const {
+		data,
+		isLoading,
+		error,
+		refetch,
+	} = useQuery({
 		queryKey: ['admin-users', params],
-		queryFn: async () => (await adminGetUsers(params)).data,
+		queryFn: async () => {
+			const response = await adminGetUsers(params)
+			return response?.data
+		},
 	})
 
 	const detailQuery = useQuery({
@@ -97,18 +105,18 @@ const AdminUsersPage = () => {
 	useEffect(() => {
 		if (!editUser) return
 		reset({
-			first_name: editUser.first_name || '',
-			last_name: editUser.last_name || '',
-			subscription_status: editUser.subscription_status || 'inactive',
-			is_subscriber: Boolean(editUser.is_subscriber),
+			first_name: editUser?.first_name || '',
+			last_name: editUser?.last_name || '',
+			subscription_status: editUser?.subscription_status || 'inactive',
+			is_subscriber: Boolean(editUser?.is_subscriber),
 		})
 	}, [editUser, reset])
 
 	useEffect(() => {
 		if (!detailQuery.data) return
 		setDetailForm({
-			is_subscriber: Boolean(detailQuery.data.is_subscriber),
-			subscription_status: detailQuery.data.subscription_status || 'inactive',
+			is_subscriber: Boolean(detailQuery.data?.is_subscriber),
+			subscription_status: detailQuery.data?.subscription_status || 'inactive',
 		})
 	}, [detailQuery.data])
 
@@ -153,10 +161,16 @@ const AdminUsersPage = () => {
 		},
 	})
 
-	const users = Array.isArray(usersQuery.data) ? usersQuery.data : []
+	console.log('AdminUsersPage rendering')
+	console.log('users data:', data)
+	console.log('error:', error)
+
+	const usersRaw = data?.results ?? data?.data ?? data ?? []
+	const users = Array.isArray(usersRaw) ? usersRaw : []
+	const safeUsers = users.filter((u) => u != null && u !== undefined)
 	const start = (page - 1) * PAGE_SIZE
-	const pagedUsers = users.slice(start, start + PAGE_SIZE)
-	const totalPages = Math.max(1, Math.ceil(users.length / PAGE_SIZE))
+	const pagedUsers = safeUsers.slice(start, start + PAGE_SIZE)
+	const totalPages = Math.max(1, Math.ceil(safeUsers.length / PAGE_SIZE))
 
 	const openDetail = (userId) => {
 		setDetailTab('Profile')
@@ -169,8 +183,9 @@ const AdminUsersPage = () => {
 	}
 
 	const saveEditUser = (values) => {
+		if (!editUser?.id) return
 		updateUserMutation.mutate({
-			id: editUser.id,
+			id: editUser?.id,
 			payload: {
 				first_name: values.first_name,
 				last_name: values.last_name,
@@ -198,29 +213,28 @@ const AdminUsersPage = () => {
 		})
 	}
 
-	if (usersQuery.isLoading) {
+	if (isLoading) {
 		return (
-			<div className="admin-loading">
-				<div style={{ width: '100%', maxWidth: 1040 }}>
-					{Array.from({ length: 6 }).map((_, idx) => (
-						<div key={idx} className="admin-skeleton" style={{ height: 44, marginBottom: 8 }} />
-					))}
+			<div style={{ color: 'white', padding: '32px' }}>
+				Loading users...
+			</div>
+		)
+	}
+
+	if (error) {
+		return (
+			<div style={{ color: 'white', padding: '32px' }}>
+				Error loading users: {error.message}
+				<div style={{ marginTop: 12 }}>
+					<Button onClick={() => refetch()}>Retry</Button>
 				</div>
 			</div>
 		)
 	}
 
-	if (usersQuery.isError) {
+	try {
 		return (
-			<div className="admin-error">
-				<p>Unable to load users.</p>
-				<Button onClick={() => usersQuery.refetch()}>Retry</Button>
-			</div>
-		)
-	}
-
-	return (
-		<motion.div className="admin-page" {...pageMotion}>
+			<motion.div className="admin-page" {...pageMotion}>
 			<header className="admin-page-header">
 				<div>
 					<h1>User Management</h1>
@@ -250,7 +264,7 @@ const AdminUsersPage = () => {
 					<option value="inactive">Inactive</option>
 				</select>
 
-				<p className="admin-subtle" style={{ marginLeft: 'auto' }}>{users.length} users</p>
+				<p className="admin-subtle" style={{ marginLeft: 'auto' }}>{safeUsers.length} users</p>
 			</section>
 
 			<section>
@@ -268,36 +282,36 @@ const AdminUsersPage = () => {
 							</tr>
 						</thead>
 						<tbody>
-							{pagedUsers.map((user) => (
-								<tr key={user.id}>
+							{pagedUsers.map((user, index) => (
+								<tr key={user?.id || `user-row-${index}`}>
 									<td>
 										<div className="admin-row-user">
-											<span className="admin-user-avatar">{initialsForUser(user)}</span>
+											<span className="admin-user-avatar">{(user?.first_name?.[0] || '?') + (user?.last_name?.[0] || '')}</span>
 											<div>
-												<p style={{ fontWeight: 700 }}>{`${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username || 'User'}</p>
-												<small className="admin-subtle">{user.email}</small>
+												<p style={{ fontWeight: 700 }}>{`${user?.first_name || ''} ${user?.last_name || ''}`.trim() || user?.username || 'User'}</p>
+												<small className="admin-subtle">{user?.email || ''}</small>
 											</div>
 										</div>
 									</td>
 									<td>
-										{user.subscription_plan ? (
-											<Badge variant="info">{user.subscription_plan}</Badge>
+										{user?.subscription_plan || '' ? (
+											<Badge variant="info">{user?.subscription_plan || ''}</Badge>
 										) : '—'}
 									</td>
 									<td>
-										<Badge variant={statusVariant(user.subscription_status)}>
-											{user.subscription_status || 'inactive'}
+										<Badge variant={statusVariant(user?.subscription_status || 'inactive')}>
+											{user?.subscription_status || 'inactive'}
 										</Badge>
 									</td>
-									<td>{user.selected_charity?.name || 'None'}</td>
-									<td>{formatDate(user.created_at)}</td>
-									<td>{user.scores_count || 0}</td>
+									<td>{user?.selected_charity?.name || 'None'}</td>
+									<td>{user?.created_at ? formatDate(user?.created_at) : '—'}</td>
+									<td>{user?.scores_count || 0}</td>
 									<td>
 										<div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-											<Button size="sm" variant="outline" onClick={() => openDetail(user.id)}>
+											<Button size="sm" variant="outline" onClick={() => user?.id && openDetail(user?.id)}>
 												View
 											</Button>
-											<Button size="sm" variant="ghost" onClick={() => setEditUser(user)}>
+											<Button size="sm" variant="ghost" onClick={() => user?.id && setEditUser(user)}>
 												Edit
 											</Button>
 										</div>
@@ -345,6 +359,10 @@ const AdminUsersPage = () => {
 				) : detailQuery.isError ? (
 					<p className="admin-subtle">Unable to load user details.</p>
 				) : (
+					(() => {
+						const selectedUser = detailQuery.data
+						if (!selectedUser) return null
+						return (
 					<div style={{ display: 'grid', gap: 12 }}>
 						<div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
 							{['Profile', 'Subscription', 'Scores'].map((tab) => (
@@ -361,20 +379,20 @@ const AdminUsersPage = () => {
 
 						{detailTab === 'Profile' ? (
 							<div style={{ display: 'grid', gap: 6 }}>
-								<p><strong>Name:</strong> {`${detailQuery.data.first_name || ''} ${detailQuery.data.last_name || ''}`.trim() || detailQuery.data.username}</p>
-								<p><strong>Email:</strong> {detailQuery.data.email}</p>
-								<p><strong>Username:</strong> {detailQuery.data.username || '—'}</p>
-								<p><strong>Phone:</strong> {detailQuery.data.phone_number || '—'}</p>
-								<p><strong>Joined:</strong> {formatDate(detailQuery.data.created_at)}</p>
-								<p><strong>Charity:</strong> {detailQuery.data.selected_charity?.name || 'None'}</p>
+								<p><strong>Name:</strong> {`${selectedUser?.first_name || ''} ${selectedUser?.last_name || ''}`.trim() || selectedUser?.username || '—'}</p>
+								<p><strong>Email:</strong> {selectedUser?.email || ''}</p>
+								<p><strong>Username:</strong> {selectedUser?.username || '—'}</p>
+								<p><strong>Phone:</strong> {selectedUser?.phone_number || '—'}</p>
+								<p><strong>Joined:</strong> {selectedUser?.created_at ? formatDate(selectedUser.created_at) : '—'}</p>
+								<p><strong>Charity:</strong> {selectedUser?.selected_charity?.name || 'None'}</p>
 							</div>
 						) : null}
 
 						{detailTab === 'Subscription' ? (
 							<div style={{ display: 'grid', gap: 10 }}>
-								<p><strong>Current Plan:</strong> {detailQuery.data.subscription_plan || '—'}</p>
-								<p><strong>Start:</strong> {detailQuery.data.subscription_start_date ? formatDate(detailQuery.data.subscription_start_date) : '—'}</p>
-								<p><strong>End:</strong> {detailQuery.data.subscription_end_date ? formatDate(detailQuery.data.subscription_end_date) : '—'}</p>
+								<p><strong>Current Plan:</strong> {selectedUser?.subscription_plan || '—'}</p>
+								<p><strong>Start:</strong> {selectedUser?.subscription_start_date ? formatDate(selectedUser.subscription_start_date) : '—'}</p>
+								<p><strong>End:</strong> {selectedUser?.subscription_end_date ? formatDate(selectedUser.subscription_end_date) : '—'}</p>
 
 								<label style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
 									<input
@@ -469,11 +487,17 @@ const AdminUsersPage = () => {
 							</div>
 						) : null}
 					</div>
+						)
+					})()
 				)}
 			</Modal>
 
 			<Modal isOpen={Boolean(editUser)} onClose={() => setEditUser(null)} title="Edit User" size="md">
 				{editUser ? (
+					(() => {
+						const selectedUser = editUser
+						if (!selectedUser) return null
+						return (
 					<form onSubmit={handleSubmit(saveEditUser)} style={{ display: 'grid', gap: 10 }}>
 						<Input label="First Name" name="first_name" register={register} />
 						<Input label="Last Name" name="last_name" register={register} />
@@ -497,6 +521,8 @@ const AdminUsersPage = () => {
 							<Button type="submit" loading={updateUserMutation.isPending}>Save Changes</Button>
 						</div>
 					</form>
+						)
+					})()
 				) : null}
 			</Modal>
 
@@ -518,8 +544,16 @@ const AdminUsersPage = () => {
 					</Button>
 				</div>
 			</Modal>
-		</motion.div>
-	)
+			</motion.div>
+		)
+	} catch (renderError) {
+		console.error('AdminUsersPage render error:', renderError)
+		return (
+			<div style={{ color: 'white', padding: '32px' }}>
+				Error loading users: {renderError?.message || 'Unexpected render error.'}
+			</div>
+		)
+	}
 }
 
 export default AdminUsersPage

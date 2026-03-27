@@ -14,6 +14,18 @@ const getFocusableElements = (root) =>
     'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
   ) || []
 
+const getInitialFocusElement = (root) => {
+  if (!root) return null
+
+  const preferred = root.querySelector(
+    '[data-autofocus="true"], input:not([disabled]), select:not([disabled]), textarea:not([disabled])',
+  )
+  if (preferred) return preferred
+
+  const focusable = Array.from(getFocusableElements(root))
+  return focusable.find((node) => !node.hasAttribute('data-modal-close')) || focusable[0] || null
+}
+
 const Modal = ({ isOpen, onClose, title, children, size = 'md' }) => {
   const dialogRef = useRef(null)
 
@@ -21,9 +33,9 @@ const Modal = ({ isOpen, onClose, title, children, size = 'md' }) => {
     if (!isOpen) return
 
     const previousActiveElement = document.activeElement
-    const focusable = getFocusableElements(dialogRef.current)
-    if (focusable.length > 0) {
-      focusable[0].focus()
+    const initialFocus = getInitialFocusElement(dialogRef.current)
+    if (initialFocus?.focus) {
+      initialFocus.focus()
     }
 
     const handleKeyDown = (event) => {
@@ -96,6 +108,9 @@ const Modal = ({ isOpen, onClose, title, children, size = 'md' }) => {
             style={{
               width: '100%',
               maxWidth: sizeMap[size] || sizeMap.md,
+              maxHeight: 'calc(100vh - 32px)',
+              display: 'flex',
+              flexDirection: 'column',
               borderRadius: 'var(--radius-lg)',
               border: '1px solid var(--color-border)',
               background: 'var(--color-surface)',
@@ -116,6 +131,7 @@ const Modal = ({ isOpen, onClose, title, children, size = 'md' }) => {
               <button
                 type="button"
                 onClick={() => onClose?.()}
+                data-modal-close="true"
                 style={{
                   width: 32,
                   height: 32,
@@ -133,7 +149,15 @@ const Modal = ({ isOpen, onClose, title, children, size = 'md' }) => {
                 <X size={16} />
               </button>
             </header>
-            <div style={{ padding: 20 }}>{children}</div>
+            <div
+              style={{
+                padding: 20,
+                overflowY: 'auto',
+                overscrollBehavior: 'contain',
+              }}
+            >
+              {children}
+            </div>
           </motion.div>
         </motion.div>
       ) : null}

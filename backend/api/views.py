@@ -173,7 +173,7 @@ class GolfScoreListCreateView(APIView):
 	permission_classes = [IsAuthenticated]
 
 	def get(self, request):
-		scores = GolfScore.objects.filter(user=request.user).order_by("-date_played", "-created_at")
+		scores = GolfScore.objects.filter(user=request.user).order_by("-date_played")
 		serializer = GolfScoreSerializer(scores, many=True)
 		return Response(serializer.data, status=status.HTTP_200_OK)
 

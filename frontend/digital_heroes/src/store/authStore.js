@@ -1,21 +1,33 @@
 import { create } from 'zustand'
 
+const normalizeUser = (userData) => {
+  if (!userData) return null
+  return {
+    ...userData,
+    is_staff: Boolean(userData.is_staff),
+  }
+}
+
 const useAuthStore = create((set) => ({
   user: null,
   accessToken: localStorage.getItem('access_token') || null,
   isAuthenticated: Boolean(localStorage.getItem('access_token')),
   isLoading: false,
+  isInitialized: false,
 
   login: (userData, accessToken, refreshToken) => {
+    const normalizedUser = normalizeUser(userData)
+
     localStorage.setItem('access_token', accessToken)
     localStorage.setItem('refresh_token', refreshToken)
-    localStorage.setItem('user', JSON.stringify(userData))
+    localStorage.setItem('user', JSON.stringify(normalizedUser))
 
     set({
-      user: userData,
+      user: normalizedUser,
       accessToken,
       isAuthenticated: true,
       isLoading: false,
+      isInitialized: true,
     })
   },
 
@@ -29,23 +41,35 @@ const useAuthStore = create((set) => ({
       accessToken: null,
       isAuthenticated: false,
       isLoading: false,
+      isInitialized: true,
     })
   },
 
   setUser: (userData) => {
-    localStorage.setItem('user', JSON.stringify(userData))
-    set({ user: userData })
+    const normalizedUser = normalizeUser(userData)
+    localStorage.setItem('user', JSON.stringify(normalizedUser))
+    set({ user: normalizedUser })
   },
 
   initializeAuth: () => {
     const accessToken = localStorage.getItem('access_token')
     const savedUser = localStorage.getItem('user')
+    let parsedUser = null
+
+    if (savedUser) {
+      try {
+        parsedUser = normalizeUser(JSON.parse(savedUser))
+      } catch {
+        localStorage.removeItem('user')
+      }
+    }
 
     set({
       accessToken: accessToken || null,
       isAuthenticated: Boolean(accessToken),
-      user: savedUser ? JSON.parse(savedUser) : null,
+      user: parsedUser,
       isLoading: false,
+      isInitialized: true,
     })
   },
 }))

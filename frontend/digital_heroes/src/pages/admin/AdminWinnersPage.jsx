@@ -32,40 +32,42 @@ const matchBadge = {
 	'3_match': { text: '🥉 3 Match', variant: 'warning' },
 }
 
+const backendBaseUrl = (import.meta.env.VITE_API_URL || '').replace('/api', '')
+
+const getMediaUrl = (path) => {
+	if (!path) return ''
+	if (path.startsWith('http://') || path.startsWith('https://')) return path
+	return `${backendBaseUrl}${path}`
+}
+
 const AdminWinnersPage = () => {
 	const queryClient = useQueryClient()
 
 	const searchParams = new URLSearchParams(window.location.search)
 	const initialStatus = searchParams.get('status') || ''
-	const initialDrawId = searchParams.get('draw_id') || ''
 
-	const [verificationFilter, setVerificationFilter] = useState(
-		initialStatus === 'pending' ? 'pending' : '',
-	)
-	const [paymentFilter, setPaymentFilter] = useState('')
-	const [drawFilter, setDrawFilter] = useState(initialDrawId)
+	const [filters, setFilters] = useState({
+		verification_status: initialStatus === 'pending' ? 'pending' : '',
+		payment_status: '',
+		draw_id: '',
+	})
 	const [page, setPage] = useState(1)
 
 	const [reviewWinner, setReviewWinner] = useState(null)
 	const [reviewNotes, setReviewNotes] = useState('')
 	const [confirmPaid, setConfirmPaid] = useState(null)
 
-	const filterParams = useMemo(() => {
-		const params = {}
-		if (verificationFilter) params.verification_status = verificationFilter
-		if (paymentFilter) params.payment_status = paymentFilter
-		if (drawFilter) params.draw_id = drawFilter
-		return params
-	}, [verificationFilter, paymentFilter, drawFilter])
-
 	const winnersQuery = useQuery({
-		queryKey: ['admin-winners', filterParams],
-		queryFn: async () => (await adminGetWinners(filterParams)).data,
+		queryKey: ['admin-winners', filters],
+		queryFn: () => adminGetWinners(filters),
+		staleTime: 30000,
+		refetchOnWindowFocus: false,
 	})
 
 	const drawsQuery = useQuery({
-		queryKey: ['admin-draws'],
-		queryFn: async () => (await adminGetDraws()).data,
+		queryKey: ['admin-draws-list'],
+		queryFn: adminGetDraws,
+		staleTime: 60000,
 	})
 
 	const verifyMutation = useMutation({
@@ -95,8 +97,12 @@ const AdminWinnersPage = () => {
 		},
 	})
 
-	const winners = Array.isArray(winnersQuery.data) ? winnersQuery.data : []
-	const draws = Array.isArray(drawsQuery.data) ? drawsQuery.data : []
+	const winnersResponse = winnersQuery.data?.data || winnersQuery.data
+	const winnersRaw = winnersResponse?.results || winnersResponse?.data || winnersResponse || []
+	const winners = Array.isArray(winnersRaw) ? winnersRaw : []
+	const drawsResponse = drawsQuery.data?.data || drawsQuery.data
+	const drawsRaw = drawsResponse?.results || drawsResponse?.data || drawsResponse || []
+	const draws = Array.isArray(drawsRaw) ? drawsRaw : []
 
 	const stats = useMemo(() => {
 		const pendingVerification = winners.filter((item) => item.verification_status === 'pending').length
@@ -126,6 +132,8 @@ const AdminWinnersPage = () => {
 			},
 		})
 	}
+
+	const proofScreenshotUrl = getMediaUrl(reviewWinner?.proof_screenshot)
 
 	if (winnersQuery.isLoading || drawsQuery.isLoading) {
 		return (
@@ -163,9 +171,9 @@ const AdminWinnersPage = () => {
 			<section className="admin-filters">
 				<select
 					className="admin-select"
-					value={verificationFilter}
+					value={filters.verification_status}
 					onChange={(event) => {
-						setVerificationFilter(event.target.value)
+						setFilters((prev) => ({ ...prev, verification_status: event.target.value }))
 						setPage(1)
 					}}
 				>
@@ -177,9 +185,9 @@ const AdminWinnersPage = () => {
 
 				<select
 					className="admin-select"
-					value={paymentFilter}
+					value={filters.payment_status}
 					onChange={(event) => {
-						setPaymentFilter(event.target.value)
+						setFilters((prev) => ({ ...prev, payment_status: event.target.value }))
 						setPage(1)
 					}}
 				>
@@ -190,16 +198,16 @@ const AdminWinnersPage = () => {
 
 				<select
 					className="admin-select"
-					value={drawFilter}
+					value={filters.draw_id}
 					onChange={(event) => {
-						setDrawFilter(event.target.value)
+						setFilters((prev) => ({ ...prev, draw_id: event.target.value }))
 						setPage(1)
 					}}
 				>
 					<option value="">All draws</option>
 					{draws.map((draw) => (
 						<option key={draw.id} value={draw.id}>
-							{getMonthName(Number(draw.month || 1))} {draw.year}
+							{draw.title || `${getMonthName(Number(draw.month || 1))} ${draw.year}`}
 						</option>
 					))}
 				</select>
@@ -353,19 +361,38 @@ const AdminWinnersPage = () => {
 
 						<div>
 							<p style={{ marginBottom: 6, fontWeight: 700 }}>Winner score snapshot</p>
-							<div className="admin-pills">
-								{(reviewWinner.draw?.drawn_numbers || []).length && reviewWinner.user_scores_snapshot
-									? reviewWinner.user_scores_snapshot.map((score, idx) => {
-											const scoreValue = Number(score?.score ?? score)
-											const isMatch = (reviewWinner.draw?.drawn_numbers || []).includes(scoreValue)
-											return (
-												<span key={`${idx}-${scoreValue}`} className={`admin-pill ${isMatch ? 'admin-pill-accent' : ''}`}>
-													{scoreValue}
-												</span>
-											)
-										})
-									: <p className="admin-subtle">Snapshot unavailable from API response.</p>}
-							</div>
+							{reviewWinner.scores_snapshot && reviewWinner.scores_snapshot.length > 0 ? (
+								<div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+									{reviewWinner.scores_snapshot.map((item, i) => {
+										const score = Number(typeof item === 'object' ? item?.score : item)
+										const isMatch = Boolean(reviewWinner.draw?.drawn_numbers?.includes(score))
+										return (
+											<div
+												key={i}
+												style={{
+													width: '40px',
+													height: '40px',
+													borderRadius: '50%',
+													background: isMatch ? 'var(--color-accent)' : 'var(--color-surface-2)',
+													color: isMatch ? 'black' : 'white',
+													display: 'flex',
+													alignItems: 'center',
+													justifyContent: 'center',
+													fontWeight: 'bold',
+													fontSize: '14px',
+													border: '2px solid var(--color-border)',
+												}}
+											>
+												{Number.isNaN(score) ? '-' : score}
+											</div>
+										)
+									})}
+								</div>
+							) : (
+								<p style={{ color: 'var(--color-text-secondary)' }}>
+									No scores snapshot available
+								</p>
+							)}
 						</div>
 
 						<div>
@@ -373,11 +400,26 @@ const AdminWinnersPage = () => {
 							{reviewWinner.proof_screenshot ? (
 								<div style={{ display: 'grid', gap: 8 }}>
 									<img
-										src={reviewWinner.proof_screenshot}
+										src={proofScreenshotUrl}
 										alt="Proof screenshot"
-										style={{ maxHeight: 260, objectFit: 'contain', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)' }}
+										onError={(event) => {
+											event.target.style.display = 'none'
+											if (event.target.nextElementSibling) {
+												event.target.nextElementSibling.style.display = 'block'
+											}
+										}}
+										style={{
+											width: '100%',
+											borderRadius: '8px',
+											border: '1px solid var(--color-border)',
+											maxHeight: '300px',
+											objectFit: 'contain',
+										}}
 									/>
-									<a href={reviewWinner.proof_screenshot} target="_blank" rel="noreferrer" style={{ color: 'var(--color-accent)' }}>
+									<p style={{ display: 'none', color: 'var(--color-text-secondary)' }}>
+										Image failed to load
+									</p>
+									<a href={proofScreenshotUrl} target="_blank" rel="noreferrer" style={{ color: 'var(--color-accent)' }}>
 										View Full Size
 									</a>
 								</div>

@@ -140,7 +140,7 @@ class GolfScore(models.Model):
 class Draw(models.Model):
 	DRAW_TYPE_CHOICES = (
 		("random", "Random"),
-		("algorithmic", "Algorithmic"),
+		("manual", "Manual"),
 	)
 	STATUS_CHOICES = (
 		("pending", "Pending"),

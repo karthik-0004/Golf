@@ -7,6 +7,10 @@ const SubscriptionGuard = ({ children }) => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
   const user = useAuthStore((state) => state.user)
 
+  if (user?.is_staff) {
+    return children
+  }
+
   if (isAuthenticated && !user?.is_subscriber) {
     return (
       <div style={{ display: 'grid', gap: 14 }}>

@@ -66,6 +66,10 @@ class UserLoginSerializer(serializers.Serializer):
 
 class UserProfileSerializer(serializers.ModelSerializer):
     selected_charity = CharityBasicSerializer(read_only=True)
+    scores_count = serializers.SerializerMethodField()
+
+    def get_scores_count(self, obj):
+        return obj.golf_scores.count()
 
     class Meta:
         model = User
@@ -75,6 +79,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "first_name",
             "last_name",
             "username",
+            "is_staff",
             "phone_number",
             "profile_picture",
             "is_subscriber",
@@ -84,6 +89,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "subscription_end_date",
             "selected_charity",
             "charity_contribution_percentage",
+            "scores_count",
             "created_at",
         ]
         read_only_fields = [
@@ -279,7 +285,23 @@ class WinnerUserSerializer(serializers.ModelSerializer):
 
 class WinnerDetailSerializer(serializers.ModelSerializer):
     draw = DrawSerializer(read_only=True)
-    user = WinnerUserSerializer(read_only=True)
+    user = serializers.SerializerMethodField()
+    scores_snapshot = serializers.SerializerMethodField()
+
+    def get_user(self, obj):
+        return {
+            "id": obj.user.id,
+            "email": obj.user.email,
+            "first_name": obj.user.first_name,
+            "last_name": obj.user.last_name,
+        }
+
+    def get_scores_snapshot(self, obj):
+        try:
+            entry = DrawEntry.objects.get(draw=obj.draw, user=obj.user)
+            return entry.scores_snapshot
+        except DrawEntry.DoesNotExist:
+            return []
 
     class Meta:
         model = Winner
@@ -292,6 +314,7 @@ class WinnerDetailSerializer(serializers.ModelSerializer):
             "verification_status",
             "payment_status",
             "proof_screenshot",
+            "scores_snapshot",
             "admin_notes",
             "created_at",
             "updated_at",
@@ -316,7 +339,7 @@ class WinnerProofUploadSerializer(serializers.ModelSerializer):
 class AdminDrawConfigSerializer(serializers.Serializer):
     DRAW_TYPE_CHOICES = (
         ("random", "Random"),
-        ("algorithmic", "Algorithmic"),
+        ("manual", "Manual"),
     )
 
     title = serializers.CharField(max_length=255)

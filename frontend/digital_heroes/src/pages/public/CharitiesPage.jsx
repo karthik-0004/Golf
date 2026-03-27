@@ -14,6 +14,16 @@ import './public-pages.css'
 
 const filterOptions = ['All', 'Featured', 'Golf Events', 'Youth', 'Veterans']
 
+const charityFallbackImages = {
+	'childrens-golf-foundation': '/assets/children_golf_foundation.jpeg',
+	'veterans-on-the-fairway': '/assets/Veterans_on_the_Fairway.jpeg',
+	'junior-golf-academy': '/assets/Junior_Golf_academy.jpeg',
+	'golf-for-good': '/assets/golf_for_good.jpeg',
+	'green-fairways-trust': '/assets/Green_Fairways_Trust.jpeg',
+}
+
+const getCharityImage = (charity) => charity?.banner_image || charityFallbackImages[charity?.slug]
+
 const CharitiesPage = () => {
 	const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
 	const [searchInput, setSearchInput] = useState('')
@@ -50,6 +60,7 @@ const CharitiesPage = () => {
 	}, [activeFilter, charities])
 
 	const featured = filtered.find((charity) => charity.is_featured) || charities.find((charity) => charity.is_featured)
+	const featuredImage = getCharityImage(featured)
 
 	return (
 		<motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
@@ -118,8 +129,8 @@ const CharitiesPage = () => {
 									overflow: 'hidden',
 								}}
 							>
-								{featured.banner_image ? (
-									<img src={featured.banner_image} alt={featured.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+								{featuredImage ? (
+									<img src={featuredImage} alt={featured.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
 								) : (
 									<span className="public-charity-placeholder">{(featured.name || 'C')[0]}</span>
 								)}
@@ -182,11 +193,13 @@ const CharitiesPage = () => {
 					</div>
 				) : filtered.length ? (
 					<div className="public-grid-3">
-						{filtered.map((charity) => (
+						{filtered.map((charity) => {
+							const charityImage = getCharityImage(charity)
+							return (
 							<Card key={charity.id} padding={0} hover>
 								<div className="public-charity-card-media">
-									{charity.banner_image ? (
-										<img src={charity.banner_image} alt={charity.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+									{charityImage ? (
+										<img src={charityImage} alt={charity.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
 									) : (
 										<span className="public-charity-placeholder">{(charity.name || 'C')[0]}</span>
 									)}
@@ -212,7 +225,8 @@ const CharitiesPage = () => {
 									</Link>
 								</div>
 							</Card>
-						))}
+							)
+						})}
 					</div>
 				) : (
 					<Card padding={18}>

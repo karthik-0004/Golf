@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import { motion } from 'framer-motion'
 import {
@@ -101,10 +101,17 @@ const AdminLayout = () => {
   const [mobileOpen, setMobileOpen] = useState(false)
 
   const user = useAuthStore((state) => state.user)
+  const isInitialized = useAuthStore((state) => state.isInitialized)
   const localLogout = useAuthStore((state) => state.logout)
 
   const initials = useMemo(() => getInitials(user), [user])
   const title = routeTitleMap[location.pathname] || 'Admin'
+
+  useEffect(() => {
+    if (isInitialized && (!user || !user.is_staff)) {
+      navigate('/dashboard', { replace: true })
+    }
+  }, [isInitialized, navigate, user])
 
   const handleLogout = async () => {
     const refresh = localStorage.getItem('refresh_token')
@@ -124,6 +131,28 @@ const AdminLayout = () => {
       setMobileOpen(false)
       navigate('/')
     }
+  }
+
+  if (!isInitialized) {
+    return (
+      <div
+        style={{
+          background: '#0A0A0A',
+          height: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: '#C8F544',
+          fontSize: '18px',
+        }}
+      >
+        Loading...
+      </div>
+    )
+  }
+
+  if (!user?.is_staff) {
+    return null
   }
 
   return (

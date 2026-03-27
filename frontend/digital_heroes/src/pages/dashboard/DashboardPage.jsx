@@ -166,7 +166,7 @@ const DashboardPage = () => {
 						{(subscription.subscription_plan || 'No plan').toString().replace(/^./, (s) => s.toUpperCase())}
 						{subscription.subscription_end_date ? ` · Renews ${formatDate(subscription.subscription_end_date)}` : ''}
 					</p>
-					{!subscription.is_subscriber ? (
+					{!subscription.is_subscriber && !profile.is_staff ? (
 						<Link className="dashboard-link-inline" to="/subscribe">
 							Subscribe Now
 						</Link>

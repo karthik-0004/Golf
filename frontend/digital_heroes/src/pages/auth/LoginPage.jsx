@@ -47,7 +47,7 @@ const LoginPage = () => {
 
 			storeLogin(user, access, refresh)
 			toast.success('Welcome back!')
-			navigate('/dashboard')
+			navigate(user?.is_staff ? '/admin/dashboard' : '/dashboard')
 		} catch (error) {
 			toast.error(getApiError(error))
 		} finally {
