@@ -15,6 +15,7 @@ import Card from '../../components/ui/Card'
 import Input from '../../components/ui/Input'
 import Modal from '../../components/ui/Modal'
 import Spinner from '../../components/ui/Spinner'
+import { getCharityImage } from '../../utils/charityImages'
 import { formatCurrency, formatDate } from '../../utils/formatters'
 import './dashboard-pages.css'
 
@@ -461,7 +462,9 @@ const SettingsPage = () => {
 								{charitiesQuery.isLoading ? (
 									<Spinner />
 								) : charities.length ? (
-									charities.map((charity) => (
+									charities.map((charity) => {
+										const imgSrc = getCharityImage(charity)
+										return (
 										<button
 											key={charity.id}
 											type="button"
@@ -484,6 +487,31 @@ const SettingsPage = () => {
 												color: 'var(--color-text)',
 											}}
 										>
+											{imgSrc ? (
+												<img
+													src={imgSrc}
+													alt={charity.name}
+													style={{
+														width: '100%',
+														height: '160px',
+														objectFit: 'cover',
+														borderRadius: 'var(--radius-md) var(--radius-md) 0 0',
+													}}
+												/>
+											) : (
+												<div style={{
+													width: '100%',
+													height: '160px',
+													background: 'var(--color-surface-2)',
+													display: 'flex',
+													alignItems: 'center',
+													justifyContent: 'center',
+													fontSize: '48px',
+													borderRadius: 'var(--radius-md) var(--radius-md) 0 0',
+												}}>
+													⛳
+												</div>
+											)}
 											<p style={{ fontWeight: 700 }}>{charity.name}</p>
 											{charity.description ? (
 												<p className="dashboard-subtle" style={{ marginTop: 4 }}>
@@ -493,7 +521,7 @@ const SettingsPage = () => {
 												</p>
 											) : null}
 										</button>
-									))
+									)})
 								) : (
 									<p className="dashboard-subtle">No charities found for this search.</p>
 								)}

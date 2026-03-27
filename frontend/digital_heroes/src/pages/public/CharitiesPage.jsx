@@ -10,19 +10,10 @@ import Button from '../../components/ui/Button'
 import Card from '../../components/ui/Card'
 import Skeleton from '../../components/ui/Skeleton'
 import useAuthStore from '../../store/authStore'
+import { getCharityImage } from '../../utils/charityImages'
 import './public-pages.css'
 
 const filterOptions = ['All', 'Featured', 'Golf Events', 'Youth', 'Veterans']
-
-const charityFallbackImages = {
-	'childrens-golf-foundation': '/assets/children_golf_foundation.jpeg',
-	'veterans-on-the-fairway': '/assets/Veterans_on_the_Fairway.jpeg',
-	'junior-golf-academy': '/assets/Junior_Golf_academy.jpeg',
-	'golf-for-good': '/assets/golf_for_good.jpeg',
-	'green-fairways-trust': '/assets/Green_Fairways_Trust.jpeg',
-}
-
-const getCharityImage = (charity) => charity?.banner_image || charityFallbackImages[charity?.slug]
 
 const CharitiesPage = () => {
 	const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
@@ -197,11 +188,31 @@ const CharitiesPage = () => {
 							const charityImage = getCharityImage(charity)
 							return (
 							<Card key={charity.id} padding={0} hover>
-								<div className="public-charity-card-media">
+								<div style={{ width: '100%', height: '160px' }}>
 									{charityImage ? (
-										<img src={charityImage} alt={charity.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+										<img
+											src={charityImage}
+											alt={charity.name}
+											style={{
+												width: '100%',
+												height: '160px',
+												objectFit: 'cover',
+												borderRadius: 'var(--radius-md) var(--radius-md) 0 0',
+											}}
+										/>
 									) : (
-										<span className="public-charity-placeholder">{(charity.name || 'C')[0]}</span>
+										<div style={{
+											width: '100%',
+											height: '160px',
+											background: 'var(--color-surface-2)',
+											display: 'flex',
+											alignItems: 'center',
+											justifyContent: 'center',
+											fontSize: '48px',
+											borderRadius: 'var(--radius-md) var(--radius-md) 0 0',
+										}}>
+											⛳
+										</div>
 									)}
 								</div>
 

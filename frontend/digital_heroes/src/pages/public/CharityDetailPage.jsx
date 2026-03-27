@@ -13,6 +13,7 @@ import Button from '../../components/ui/Button'
 import Card from '../../components/ui/Card'
 import Skeleton from '../../components/ui/Skeleton'
 import useAuthStore from '../../store/authStore'
+import { getCharityImage } from '../../utils/charityImages'
 import './public-pages.css'
 
 const CharityDetailPage = () => {
@@ -50,6 +51,7 @@ const CharityDetailPage = () => {
 	})
 
 	const charity = detailQuery.data
+	const charityImage = getCharityImage(charity)
 	const related = useMemo(() => {
 		const all = Array.isArray(allCharitiesQuery.data) ? allCharitiesQuery.data : []
 		return all.filter((item) => item.slug !== slug).slice(0, 3)
@@ -85,9 +87,22 @@ const CharityDetailPage = () => {
 		<motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
 			<section className="container" style={{ marginTop: 16 }}>
 				<div className="charity-detail-banner">
-					{charity.banner_image ? (
-						<img src={charity.banner_image} alt={charity.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-					) : null}
+					{charityImage ? (
+						<img src={charityImage} alt={charity.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+					) : (
+						<div style={{
+							width: '100%',
+							height: '160px',
+							background: 'var(--color-surface-2)',
+							display: 'flex',
+							alignItems: 'center',
+							justifyContent: 'center',
+							fontSize: '48px',
+							borderRadius: 'var(--radius-md) var(--radius-md) 0 0',
+						}}>
+							⛳
+						</div>
+					)}
 					<div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.65), rgba(0,0,0,0.12))' }} />
 					<div style={{ position: 'absolute', left: 18, bottom: 16 }}>
 						<p style={{ color: 'var(--color-text-secondary)' }}>Charities / {charity.name}</p>
@@ -124,11 +139,29 @@ const CharityDetailPage = () => {
 					<div>
 						<Card padding={18} className="charity-sticky">
 							<div style={{ textAlign: 'center' }}>
-								{charity.logo ? (
-									<img src={charity.logo} alt={charity.name} style={{ maxHeight: 120, objectFit: 'contain', marginBottom: 12 }} />
+								{charityImage ? (
+									<img
+										src={charityImage}
+										alt={charity.name}
+										style={{
+											width: '100%',
+											height: '160px',
+											objectFit: 'cover',
+											borderRadius: 'var(--radius-md) var(--radius-md) 0 0',
+										}}
+									/>
 								) : (
-									<div style={{ display: 'inline-flex', width: 80, height: 80, borderRadius: '50%', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--color-border)', background: 'var(--color-surface-2)', marginBottom: 12 }}>
-										<Heart color="var(--color-accent)" />
+									<div style={{
+										width: '100%',
+										height: '160px',
+										background: 'var(--color-surface-2)',
+										display: 'flex',
+										alignItems: 'center',
+										justifyContent: 'center',
+										fontSize: '48px',
+										borderRadius: 'var(--radius-md) var(--radius-md) 0 0',
+									}}>
+										⛳
 									</div>
 								)}
 							</div>

@@ -16,6 +16,7 @@ import Badge from '../../components/ui/Badge'
 import Button from '../../components/ui/Button'
 import Modal from '../../components/ui/Modal'
 import Spinner from '../../components/ui/Spinner'
+import { getCharityImage } from '../../utils/charityImages'
 import './admin-pages.css'
 
 const pageMotion = {
@@ -227,17 +228,35 @@ const AdminCharitiesPage = () => {
 				</div>
 			) : (
 				<section className="admin-grid-3">
-					{charities.map((charity) => (
+					{charities.map((charity) => {
+						const imgSrc = getCharityImage(charity)
+						return (
 						<article key={charity.id} className="admin-charity-card">
 							<div className="admin-charity-media">
-								{charity.logo ? (
+								{imgSrc ? (
 									<img
-										src={charity.logo}
+										src={imgSrc}
 										alt={charity.name}
-										style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+										style={{
+											width: '100%',
+											height: '160px',
+											objectFit: 'cover',
+											borderRadius: 'var(--radius-md) var(--radius-md) 0 0',
+										}}
 									/>
 								) : (
-									<Heart color="var(--color-accent)" />
+									<div style={{
+										width: '100%',
+										height: '160px',
+										background: 'var(--color-surface-2)',
+										display: 'flex',
+										alignItems: 'center',
+										justifyContent: 'center',
+										fontSize: '48px',
+										borderRadius: 'var(--radius-md) var(--radius-md) 0 0',
+									}}>
+										⛳
+									</div>
 								)}
 							</div>
 
@@ -279,7 +298,7 @@ const AdminCharitiesPage = () => {
 								</div>
 							</div>
 						</article>
-					))}
+					)})}
 				</section>
 			)}
 

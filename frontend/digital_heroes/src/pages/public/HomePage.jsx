@@ -17,6 +17,7 @@ import toast from 'react-hot-toast'
 import { getCharities } from '../../api/charityApi'
 import { getPlans } from '../../api/subscriptionApi'
 import Button from '../../components/ui/Button'
+import { getCharityImage } from '../../utils/charityImages'
 import './HomePage.css'
 
 const sectionReveal = {
@@ -332,11 +333,29 @@ const HomePage = () => {
               : (featuredCharities.length ? featuredCharities : sampleCharities).map((charity) => (
                   <article key={charity.slug} className="charity-card">
                     <div className="charity-image">
-                      {charity.logo ? (
-                        <img src={charity.logo} alt={charity.name} />
+                      {getCharityImage(charity) ? (
+                        <img
+                          src={getCharityImage(charity)}
+                          alt={charity.name}
+                          style={{
+                            width: '100%',
+                            height: '160px',
+                            objectFit: 'cover',
+                            borderRadius: 'var(--radius-md) var(--radius-md) 0 0',
+                          }}
+                        />
                       ) : (
-                        <div className="flex-center" style={{ height: '100%', color: 'var(--color-text-muted)' }}>
-                          <Heart size={24} />
+                        <div style={{
+                          width: '100%',
+                          height: '160px',
+                          background: 'var(--color-surface-2)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '48px',
+                          borderRadius: 'var(--radius-md) var(--radius-md) 0 0',
+                        }}>
+                          ⛳
                         </div>
                       )}
                     </div>

@@ -14,6 +14,7 @@ import Badge from '../../components/ui/Badge'
 import Button from '../../components/ui/Button'
 import Card from '../../components/ui/Card'
 import Spinner from '../../components/ui/Spinner'
+import { getCharityImage } from '../../utils/charityImages'
 import { formatCurrency, formatDate, getMonthName, getSubscriptionStatusColor } from '../../utils/formatters'
 import './dashboard-pages.css'
 
@@ -128,6 +129,7 @@ const DashboardPage = () => {
 	const userScoreNumbers = scores.slice(0, 5).map((item) => Number(item.score))
 	const matchedNumbers = userScoreNumbers.filter((score) => drawNumbers.includes(score))
 	const currentDrawWin = winnings.find((item) => item?.draw?.id === draw?.id)
+	const selectedCharityImage = getCharityImage(profile?.selected_charity)
 
 	if (isLoading) {
 		return (
@@ -325,6 +327,31 @@ const DashboardPage = () => {
 				<h2 style={{ marginBottom: 10 }}>Your Charity</h2>
 				{profile?.selected_charity ? (
 					<Card padding={18}>
+						{selectedCharityImage ? (
+							<img
+								src={selectedCharityImage}
+								alt={profile.selected_charity.name}
+								style={{
+									width: '100%',
+									height: '160px',
+									objectFit: 'cover',
+									borderRadius: 'var(--radius-md) var(--radius-md) 0 0',
+								}}
+							/>
+						) : (
+							<div style={{
+								width: '100%',
+								height: '160px',
+								background: 'var(--color-surface-2)',
+								display: 'flex',
+								alignItems: 'center',
+								justifyContent: 'center',
+								fontSize: '48px',
+								borderRadius: 'var(--radius-md) var(--radius-md) 0 0',
+							}}>
+								⛳
+							</div>
+						)}
 						<h3 style={{ fontSize: 20 }}>{profile.selected_charity.name}</h3>
 						<p className="dashboard-subtle">
 							Contribution: {Number(profile.charity_contribution_percentage || 10)}%
