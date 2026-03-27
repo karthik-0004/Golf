@@ -1,3 +1,6 @@
+django
+gunicorn
+whitenoise
 django-cors-headers==4.9.0
 django-storages==1.14.6
 djangorestframework==3.17.1
