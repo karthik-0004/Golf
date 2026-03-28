@@ -1,9 +1,59 @@
 import axios from 'axios'
 
+const pendingControllers = new Set()
+
+const attachAbortController = (config) => {
+  if (config?.signal) return config
+
+  const controller = new AbortController()
+  pendingControllers.add(controller)
+
+  return {
+    ...config,
+    signal: controller.signal,
+    __requestController: controller,
+  }
+}
+
+const detachAbortController = (config) => {
+  const controller = config?.__requestController
+  if (controller) {
+    pendingControllers.delete(controller)
+  }
+}
+
+export const cancelAllPendingRequests = (reason = 'Session changed, cancel pending requests.') => {
+  pendingControllers.forEach((controller) => controller.abort(reason))
+  pendingControllers.clear()
+}
+
+const extractErrorMessage = (payload) => {
+  if (!payload) return null
+  if (typeof payload === 'string') return payload
+  if (Array.isArray(payload)) {
+    const first = payload.find((item) => typeof item === 'string')
+    return first || null
+  }
+  if (typeof payload === 'object') {
+    if (typeof payload.detail === 'string') return payload.detail
+    if (typeof payload.message === 'string') return payload.message
+
+    for (const [key, value] of Object.entries(payload)) {
+      if (Array.isArray(value) && value.length > 0) {
+        const firstItem = value[0]
+        if (typeof firstItem === 'string') {
+          return key === 'non_field_errors' ? firstItem : `${key}: ${firstItem}`
+        }
+      }
+      const nested = extractErrorMessage(value)
+      if (nested) return nested
+    }
+  }
+  return null
+}
+
 export const getApiError = (error) =>
-  error?.response?.data?.detail ||
-  error?.response?.data?.message ||
-  (typeof error?.response?.data === 'string' ? error.response.data : null) ||
+  extractErrorMessage(error?.response?.data) ||
   error?.message ||
   'Something went wrong'
 
@@ -13,19 +63,24 @@ const axiosClient = axios.create({
 
 axiosClient.interceptors.request.use(
   (config) => {
+    const requestConfig = attachAbortController(config)
     const accessToken = localStorage.getItem('access_token')
     if (accessToken) {
-      config.headers.Authorization = `Bearer ${accessToken}`
+      requestConfig.headers.Authorization = `Bearer ${accessToken}`
     }
-    return config
+    return requestConfig
   },
   (error) => Promise.reject(error),
 )
 
 axiosClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    detachAbortController(response?.config)
+    return response
+  },
   async (error) => {
     const originalRequest = error.config
+    detachAbortController(originalRequest)
 
     if (error.response?.status === 401 && !originalRequest?._retry) {
       originalRequest._retry = true
@@ -52,6 +107,8 @@ axiosClient.interceptors.response.use(
 
         localStorage.setItem('access_token', newAccessToken)
         originalRequest.headers.Authorization = `Bearer ${newAccessToken}`
+        originalRequest.__requestController = undefined
+        originalRequest.signal = undefined
         return axiosClient(originalRequest)
       } catch (refreshError) {
         localStorage.removeItem('access_token')

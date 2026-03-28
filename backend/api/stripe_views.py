@@ -89,7 +89,7 @@ class CreateCheckoutSessionView(APIView):
 
             session = stripe.checkout.Session.create(
                 customer=user.stripe_customer_id,
-                automatic_payment_methods={"enabled": True},
+                payment_method_types=settings.STRIPE_PAYMENT_METHOD_TYPES,
                 line_items=[{"price": stripe_price_id, "quantity": 1}],
                 mode="subscription",
                 success_url=f"{settings.FRONTEND_URL}/dashboard?payment=success",

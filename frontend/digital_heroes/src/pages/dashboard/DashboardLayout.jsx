@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 
+import { useQueryClient } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import {
   Heart,
@@ -16,6 +17,7 @@ import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 
 import { logoutUser } from '../../api/authApi'
+import { cancelAllPendingRequests } from '../../api/axiosClient'
 import { getApiError } from '../../api/axiosClient'
 import Button from '../../components/ui/Button'
 import useAuthStore from '../../store/authStore'
@@ -37,7 +39,7 @@ const getInitials = (user) => {
   return `${first}${last}`.toUpperCase() || fallback.toUpperCase()
 }
 
-const SidebarInner = ({ user, onLogout, onNavigate }) => {
+const SidebarInner = ({ user, onLogout, onNavigate, isLoggingOut }) => {
   const initials = getInitials(user)
   const fullName = `${user?.first_name || ''} ${user?.last_name || ''}`.trim() || user?.username || 'User'
 
@@ -75,7 +77,14 @@ const SidebarInner = ({ user, onLogout, onNavigate }) => {
             <small title={user?.email}>{user?.email || 'No email'}</small>
           </div>
         </div>
-        <Button variant="ghost" size="sm" onClick={onLogout} icon={<LogOut size={15} />} fullWidth>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onLogout}
+          icon={<LogOut size={15} />}
+          loading={isLoggingOut}
+          fullWidth
+        >
           Logout
         </Button>
       </div>
@@ -85,13 +94,18 @@ const SidebarInner = ({ user, onLogout, onNavigate }) => {
 
 const DashboardLayout = () => {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const user = useAuthStore((state) => state.user)
   const localLogout = useAuthStore((state) => state.logout)
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
 
   const initials = useMemo(() => getInitials(user), [user])
 
   const handleLogout = async () => {
+    if (isLoggingOut) return
+    setIsLoggingOut(true)
+
     const refresh = localStorage.getItem('refresh_token')
 
     try {
@@ -104,9 +118,12 @@ const DashboardLayout = () => {
         toast(detail, { icon: 'ℹ️' })
       }
     } finally {
+      cancelAllPendingRequests()
+      queryClient.clear()
       localLogout()
       toast.success('Logged out successfully.')
-      navigate('/')
+      setIsLoggingOut(false)
+      navigate('/login', { replace: true })
       setMobileOpen(false)
     }
   }
@@ -114,7 +131,7 @@ const DashboardLayout = () => {
   return (
     <div className="dashboard-shell">
       <aside className="dashboard-sidebar desktop-only">
-        <SidebarInner user={user} onLogout={handleLogout} />
+        <SidebarInner user={user} onLogout={handleLogout} isLoggingOut={isLoggingOut} />
       </aside>
 
       <header className="dashboard-mobile-topbar mobile-only">
@@ -167,6 +184,7 @@ const DashboardLayout = () => {
             <SidebarInner
               user={user}
               onLogout={handleLogout}
+              isLoggingOut={isLoggingOut}
               onNavigate={() => setMobileOpen(false)}
             />
           </motion.aside>

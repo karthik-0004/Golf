@@ -29,15 +29,40 @@ import HowItWorksPage from './pages/public/HowItWorksPage'
 import SubscribePage from './pages/public/SubscribePage'
 import useAuthStore from './store/authStore'
 
-const queryClient = new QueryClient()
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 30 * 1000,
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+})
+
+[
+  ['admin-analytics'],
+  ['admin-draws'],
+  ['admin-draws-list'],
+  ['admin-winners'],
+  ['admin-users'],
+  ['admin-user-detail'],
+  ['admin-user-scores'],
+  ['admin-charities'],
+].forEach((queryKey) => {
+  queryClient.setQueryDefaults(queryKey, {
+    staleTime: 60 * 1000,
+    refetchOnWindowFocus: false,
+    retry: 1,
+  })
+})
 
 const withLayout = (component) => <Layout>{component}</Layout>
 const withTransition = (component) => (
   <motion.div
-    initial={{ opacity: 0, y: 10 }}
-    animate={{ opacity: 1, y: 0 }}
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
     exit={{ opacity: 0 }}
-    transition={{ duration: 0.2 }}
+    transition={{ duration: 0.15 }}
   >
     {component}
   </motion.div>

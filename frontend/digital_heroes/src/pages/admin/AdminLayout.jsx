@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 
+import { useQueryClient } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import {
   ExternalLink,
@@ -16,6 +17,7 @@ import toast from 'react-hot-toast'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 
 import { logoutUser } from '../../api/authApi'
+import { cancelAllPendingRequests } from '../../api/axiosClient'
 import { getApiError } from '../../api/axiosClient'
 import Button from '../../components/ui/Button'
 import Badge from '../../components/ui/Badge'
@@ -45,7 +47,7 @@ const getInitials = (user) => {
   return `${first}${last}`.toUpperCase() || fallback.toUpperCase()
 }
 
-const SidebarContent = ({ user, onLogout, onNavigate }) => {
+const SidebarContent = ({ user, onLogout, onNavigate, isLoggingOut }) => {
   const fullName = `${user?.first_name || ''} ${user?.last_name || ''}`.trim() || user?.username || 'Admin User'
 
   return (
@@ -87,7 +89,14 @@ const SidebarContent = ({ user, onLogout, onNavigate }) => {
           <small title={user?.email}>{user?.email || 'No email'}</small>
         </div>
 
-        <Button size="sm" variant="ghost" icon={<LogOut size={14} />} onClick={onLogout} fullWidth>
+        <Button
+          size="sm"
+          variant="ghost"
+          icon={<LogOut size={14} />}
+          onClick={onLogout}
+          loading={isLoggingOut}
+          fullWidth
+        >
           Logout
         </Button>
       </div>
@@ -98,7 +107,9 @@ const SidebarContent = ({ user, onLogout, onNavigate }) => {
 const AdminLayout = () => {
   const location = useLocation()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
 
   const user = useAuthStore((state) => state.user)
   const isInitialized = useAuthStore((state) => state.isInitialized)
@@ -114,6 +125,9 @@ const AdminLayout = () => {
   }, [isInitialized, navigate, user])
 
   const handleLogout = async () => {
+    if (isLoggingOut) return
+    setIsLoggingOut(true)
+
     const refresh = localStorage.getItem('refresh_token')
 
     try {
@@ -126,10 +140,13 @@ const AdminLayout = () => {
         toast(detail, { icon: 'ℹ️' })
       }
     } finally {
+      cancelAllPendingRequests()
+      queryClient.clear()
       localLogout()
       toast.success('Logged out successfully.')
       setMobileOpen(false)
-      navigate('/')
+      setIsLoggingOut(false)
+      navigate('/login', { replace: true })
     }
   }
 
@@ -158,7 +175,7 @@ const AdminLayout = () => {
   return (
     <div className="admin-shell">
       <aside className="admin-sidebar admin-desktop-only">
-        <SidebarContent user={user} onLogout={handleLogout} />
+        <SidebarContent user={user} onLogout={handleLogout} isLoggingOut={isLoggingOut} />
       </aside>
 
       {mobileOpen ? (
@@ -193,6 +210,7 @@ const AdminLayout = () => {
               user={user}
               onLogout={handleLogout}
               onNavigate={() => setMobileOpen(false)}
+              isLoggingOut={isLoggingOut}
             />
           </motion.aside>
         </motion.div>

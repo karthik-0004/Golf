@@ -43,19 +43,22 @@ class UserRegisterSerializer(serializers.ModelSerializer):
 
 
 class UserLoginSerializer(serializers.Serializer):
-    email = serializers.EmailField()
+    email = serializers.CharField()
     password = serializers.CharField(write_only=True)
 
     def validate(self, attrs):
-        email = attrs.get("email")
+        identifier = (attrs.get("email") or "").strip()
         password = attrs.get("password")
 
-        user = authenticate(email=email, password=password)
+        if not identifier:
+            raise serializers.ValidationError({"email": "Email or username is required."})
+
+        user = authenticate(email=identifier, password=password)
         if user is None:
-            user = authenticate(username=email, password=password)
+            user = authenticate(username=identifier, password=password)
 
         if user is None:
-            raise serializers.ValidationError("Invalid email or password.")
+            raise serializers.ValidationError("Invalid email/username or password.")
 
         if not user.is_active:
             raise serializers.ValidationError("User account is inactive.")

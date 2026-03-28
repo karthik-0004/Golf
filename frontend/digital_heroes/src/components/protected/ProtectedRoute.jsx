@@ -1,3 +1,5 @@
+import { useEffect, useState } from 'react'
+
 import { Navigate } from 'react-router-dom'
 
 import useAuthStore from '../../store/authStore'
@@ -6,8 +8,26 @@ const ProtectedRoute = ({ children, adminOnly = false }) => {
   const isInitialized = useAuthStore((state) => state.isInitialized)
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
   const user = useAuthStore((state) => state.user)
+  const [initTimedOut, setInitTimedOut] = useState(false)
+
+  useEffect(() => {
+    if (isInitialized) {
+      setInitTimedOut(false)
+      return
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setInitTimedOut(true)
+    }, 500)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [isInitialized])
 
   if (!isInitialized) {
+    if (initTimedOut) {
+      return <Navigate to="/login" replace />
+    }
+
     return (
       <div
         style={{

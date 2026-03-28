@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 
+import { useQueryClient } from '@tanstack/react-query'
 import { ChevronDown, Menu, X } from 'lucide-react'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 
 import { logoutUser } from '../../api/authApi'
+import { cancelAllPendingRequests } from '../../api/axiosClient'
 import { getApiError } from '../../api/axiosClient'
 import useAuthStore from '../../store/authStore'
 import Button from '../ui/Button'
@@ -26,12 +28,14 @@ const navLinkStyle = ({ isActive }) => ({
 const Navbar = () => {
   const navigate = useNavigate()
   const location = useLocation()
+  const queryClient = useQueryClient()
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
   const user = useAuthStore((state) => state.user)
   const clearAuth = useAuthStore((state) => state.logout)
 
   const [mobileOpen, setMobileOpen] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
 
   useEffect(() => {
     setMobileOpen(false)
@@ -53,7 +57,10 @@ const Navbar = () => {
   }, [user?.email, user?.first_name, user?.last_name])
 
   const onLogout = async () => {
+    if (isLoggingOut) return
+    setIsLoggingOut(true)
     const refreshToken = localStorage.getItem('refresh_token')
+
     try {
       if (refreshToken) {
         await logoutUser({ refresh: refreshToken })
@@ -62,8 +69,13 @@ const Navbar = () => {
       // Local logout should always proceed even if API logout fails.
       getApiError(error)
     } finally {
+      cancelAllPendingRequests()
+      queryClient.clear()
       clearAuth()
-      navigate('/')
+      setMobileOpen(false)
+      setUserMenuOpen(false)
+      setIsLoggingOut(false)
+      navigate('/login', { replace: true })
     }
   }
 
@@ -220,6 +232,7 @@ const Navbar = () => {
                   <button
                     type="button"
                     onClick={onLogout}
+                    disabled={isLoggingOut}
                     style={{
                       width: '100%',
                       textAlign: 'left',
@@ -229,7 +242,7 @@ const Navbar = () => {
                       color: 'var(--color-error)',
                     }}
                   >
-                    Logout
+                    {isLoggingOut ? 'Logging out...' : 'Logout'}
                   </button>
                 </div>
               )}
@@ -299,7 +312,7 @@ const Navbar = () => {
                       Settings
                     </Button>
                   </NavLink>
-                  <Button variant="danger" fullWidth onClick={onLogout}>
+                  <Button variant="danger" fullWidth onClick={onLogout} loading={isLoggingOut}>
                     Logout
                   </Button>
                 </>

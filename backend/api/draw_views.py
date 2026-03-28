@@ -3,7 +3,7 @@ from collections import Counter
 from decimal import Decimal, ROUND_HALF_UP
 
 from django.db import transaction
-from django.db.models import Q, Sum
+from django.db.models import Count, Q, Sum
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import status
@@ -30,7 +30,10 @@ def _quantize_money(value):
 
 
 def _active_subscribers_queryset():
-    return User.objects.filter(is_subscriber=True, subscription_status="active")
+    return User.objects.select_related("selected_charity").filter(
+        is_subscriber=True,
+        subscription_status="active",
+    )
 
 
 def _snapshot_scores_for_user(user):
@@ -117,11 +120,28 @@ def _validate_drawn_numbers(raw_numbers):
 
 
 def _winner_summary_for_draw(draw):
+    prefetched_winners = getattr(draw, "_prefetched_objects_cache", {}).get("winners")
+    if prefetched_winners is not None:
+        counts = {"5_match": 0, "4_match": 0, "3_match": 0}
+        for winner in prefetched_winners:
+            if winner.match_type == "5_match":
+                counts["5_match"] += 1
+            elif winner.match_type == "4_match":
+                counts["4_match"] += 1
+            elif winner.match_type == "3_match":
+                counts["3_match"] += 1
+        return counts
+
     winners = Winner.objects.filter(draw=draw)
+    aggregated = winners.aggregate(
+        five_match=Count("id", filter=Q(match_type="5_match")),
+        four_match=Count("id", filter=Q(match_type="4_match")),
+        three_match=Count("id", filter=Q(match_type="3_match")),
+    )
     return {
-        "5_match": winners.filter(match_type="5_match").count(),
-        "4_match": winners.filter(match_type="4_match").count(),
-        "3_match": winners.filter(match_type="3_match").count(),
+        "5_match": aggregated["five_match"] or 0,
+        "4_match": aggregated["four_match"] or 0,
+        "3_match": aggregated["three_match"] or 0,
     }
 
 
@@ -203,7 +223,12 @@ class CurrentDrawView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
-        draw = Draw.objects.filter(status="published").order_by("-year", "-month", "-created_at").first()
+        draw = (
+            Draw.objects.select_related("prize_pool")
+            .filter(status="published")
+            .order_by("-year", "-month", "-created_at")
+            .first()
+        )
         if not draw:
             return Response({"detail": "No published draw found."}, status=status.HTTP_404_NOT_FOUND)
 
@@ -251,7 +276,11 @@ class UploadWinnerProofView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, pk):
-        winner = get_object_or_404(Winner, pk=pk, user=request.user)
+        winner = get_object_or_404(
+            Winner.objects.select_related("draw", "user"),
+            pk=pk,
+            user=request.user,
+        )
         if winner.verification_status != "pending":
             return Response(
                 {"detail": "Proof can only be uploaded while verification status is pending."},
@@ -269,7 +298,7 @@ class AdminDrawListCreateView(APIView):
     permission_classes = [IsAdminUser]
 
     def get(self, request):
-        draws = Draw.objects.all().order_by("-created_at")
+        draws = Draw.objects.prefetch_related("winners").all().order_by("-created_at")
         serializer = DrawSerializer(draws, many=True)
         payload = serializer.data
         for index, draw in enumerate(draws):
@@ -494,7 +523,7 @@ class AdminVerifyWinnerView(APIView):
     permission_classes = [IsAdminUser]
 
     def post(self, request, pk):
-        winner = get_object_or_404(Winner, pk=pk)
+        winner = get_object_or_404(Winner.objects.select_related("draw", "user"), pk=pk)
         action = request.data.get("action")
         admin_notes = request.data.get("admin_notes")
 
@@ -517,7 +546,7 @@ class AdminMarkPaidView(APIView):
     permission_classes = [IsAdminUser]
 
     def post(self, request, pk):
-        winner = get_object_or_404(Winner, pk=pk)
+        winner = get_object_or_404(Winner.objects.select_related("draw", "user"), pk=pk)
         if winner.verification_status != "approved":
             return Response(
                 {"detail": "Winner must be approved before marking as paid."},
@@ -533,7 +562,7 @@ class AdminAnalyticsView(APIView):
     permission_classes = [IsAdminUser]
 
     def get(self, request):
-        users = User.objects.all()
+        users = User.objects.select_related("selected_charity").all()
         active_subscribers = users.filter(is_subscriber=True, subscription_status="active")
 
         total_prize_pool = PrizePool.objects.aggregate(total=Sum("total_pool")).get("total") or Decimal("0.00")
@@ -568,7 +597,7 @@ class AdminUserListView(APIView):
     permission_classes = [IsAdminUser]
 
     def get(self, request):
-        users = User.objects.all().order_by("-created_at")
+        users = User.objects.select_related("selected_charity").all().order_by("-created_at")
         is_subscriber = request.query_params.get("is_subscriber")
         subscription_status = request.query_params.get("subscription_status")
         search = request.query_params.get("search")
@@ -597,12 +626,12 @@ class AdminUserDetailView(APIView):
     permission_classes = [IsAdminUser]
 
     def get(self, request, pk):
-        user = get_object_or_404(User, pk=pk)
+        user = get_object_or_404(User.objects.select_related("selected_charity"), pk=pk)
         serializer = UserProfileSerializer(user)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def put(self, request, pk):
-        user = get_object_or_404(User, pk=pk)
+        user = get_object_or_404(User.objects.select_related("selected_charity"), pk=pk)
         allowed_fields = {
             "first_name",
             "last_name",
@@ -632,20 +661,20 @@ class AdminUserScoresView(APIView):
     permission_classes = [IsAdminUser]
 
     def get(self, request, pk):
-        user = get_object_or_404(User, pk=pk)
+        user = get_object_or_404(User.objects.select_related("selected_charity"), pk=pk)
         scores = GolfScore.objects.filter(user=user).order_by("-date_played", "-created_at")
         serializer = GolfScoreSerializer(scores, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request, pk):
-        user = get_object_or_404(User, pk=pk)
+        user = get_object_or_404(User.objects.select_related("selected_charity"), pk=pk)
         serializer = GolfScoreSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save(user=user)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def delete(self, request, pk):
-        user = get_object_or_404(User, pk=pk)
+        user = get_object_or_404(User.objects.select_related("selected_charity"), pk=pk)
         score_id = request.data.get("score_id")
         if not score_id:
             return Response({"detail": "score_id is required."}, status=status.HTTP_400_BAD_REQUEST)

@@ -113,6 +113,8 @@ if db_host and not is_placeholder_db_config:
             'PASSWORD': db_password,
             'HOST': db_host,
             'PORT': db_port,
+            'CONN_MAX_AGE': 60,
+            'CONN_HEALTH_CHECKS': True,
             'OPTIONS': {
                 'sslmode': db_sslmode,
                 'connect_timeout': db_connect_timeout,
@@ -196,6 +198,11 @@ STRIPE_SECRET_KEY = os.getenv('STRIPE_SECRET_KEY', '')
 STRIPE_WEBHOOK_SECRET = os.getenv('STRIPE_WEBHOOK_SECRET', '')
 STRIPE_PRICE_ID_MONTHLY = os.getenv('STRIPE_PRICE_ID_MONTHLY', '')
 STRIPE_PRICE_ID_YEARLY = os.getenv('STRIPE_PRICE_ID_YEARLY', '')
+STRIPE_PAYMENT_METHOD_TYPES = [
+    method.strip()
+    for method in os.getenv('STRIPE_PAYMENT_METHOD_TYPES', 'card').split(',')
+    if method.strip()
+]
 FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:5173')
 
 AUTH_USER_MODEL = 'api.User'

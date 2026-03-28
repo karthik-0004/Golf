@@ -54,11 +54,14 @@ const RegisterPage = () => {
 	const navigate = useNavigate()
 	const storeLogin = useAuthStore((state) => state.login)
 	const [isSubmitting, setIsSubmitting] = useState(false)
+	const [duplicateEmailError, setDuplicateEmailError] = useState('')
 
 	const {
 		register,
 		handleSubmit,
 		watch,
+		setError,
+		clearErrors,
 		formState: { errors },
 	} = useForm({
 		resolver: zodResolver(registerSchema),
@@ -71,7 +74,22 @@ const RegisterPage = () => {
 	const passwordValue = watch('password')
 	const strength = useMemo(() => getPasswordStrength(passwordValue), [passwordValue])
 
+	const isDuplicateEmailError = (error) => {
+		const emailErrors = error?.response?.data?.email
+		const detail = error?.response?.data?.detail
+
+		if (Array.isArray(emailErrors)) {
+			return emailErrors.some((item) =>
+				typeof item === 'string' && item.toLowerCase().includes('already')
+			)
+		}
+
+		return typeof detail === 'string' && detail.toLowerCase().includes('email') && detail.toLowerCase().includes('already')
+	}
+
 	const onSubmit = async (values) => {
+		setDuplicateEmailError('')
+		clearErrors('email')
 		setIsSubmitting(true)
 		try {
 			const payload = {
@@ -96,6 +114,12 @@ const RegisterPage = () => {
 			toast.success('Account created! Welcome to Digital Heroes Golf 🎉')
 			navigate('/subscribe')
 		} catch (error) {
+			if (isDuplicateEmailError(error)) {
+				const message = 'An account with this email already exists.'
+				setDuplicateEmailError(message)
+				setError('email', { type: 'server', message })
+				return
+			}
 			toast.error(getApiError(error))
 		} finally {
 			setIsSubmitting(false)
@@ -206,6 +230,14 @@ const RegisterPage = () => {
 							register={register}
 							error={errors.email?.message}
 						/>
+						{duplicateEmailError ? (
+							<div style={{ marginTop: -4, marginBottom: 4 }}>
+								<p style={{ color: 'var(--color-error)', fontSize: 13 }}>{duplicateEmailError}</p>
+								<Link to="/login" style={{ color: 'var(--color-accent)', fontSize: 13, fontWeight: 600 }}>
+									Sign in to your account →
+								</Link>
+							</div>
+						) : null}
 
 						<Input
 							label="Username"

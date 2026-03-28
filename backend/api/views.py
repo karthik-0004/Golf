@@ -7,7 +7,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 
-from .models import Charity, GolfScore
+from .models import Charity, GolfScore, User
 from .serializers import (
 	CharityDetailSerializer,
 	CharityListSerializer,
@@ -92,21 +92,24 @@ class UserProfileView(APIView):
 	permission_classes = [IsAuthenticated]
 
 	def get(self, request):
-		serializer = UserProfileSerializer(request.user, context={"request": request})
+		user = User.objects.select_related("selected_charity").get(pk=request.user.pk)
+		serializer = UserProfileSerializer(user, context={"request": request})
 		return Response(serializer.data, status=status.HTTP_200_OK)
 
 	def put(self, request):
-		serializer = UserUpdateSerializer(request.user, data=request.data)
+		user = User.objects.select_related("selected_charity").get(pk=request.user.pk)
+		serializer = UserUpdateSerializer(user, data=request.data)
 		serializer.is_valid(raise_exception=True)
 		serializer.save()
-		profile = UserProfileSerializer(request.user, context={"request": request})
+		profile = UserProfileSerializer(user, context={"request": request})
 		return Response(profile.data, status=status.HTTP_200_OK)
 
 	def patch(self, request):
-		serializer = UserUpdateSerializer(request.user, data=request.data, partial=True)
+		user = User.objects.select_related("selected_charity").get(pk=request.user.pk)
+		serializer = UserUpdateSerializer(user, data=request.data, partial=True)
 		serializer.is_valid(raise_exception=True)
 		serializer.save()
-		profile = UserProfileSerializer(request.user, context={"request": request})
+		profile = UserProfileSerializer(user, context={"request": request})
 		return Response(profile.data, status=status.HTTP_200_OK)
 
 

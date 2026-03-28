@@ -15,7 +15,7 @@ import Input from '../../components/ui/Input'
 import useAuthStore from '../../store/authStore'
 
 const loginSchema = z.object({
-	email: z.email('Please enter a valid email address.'),
+	email: z.string().min(1, 'Email or username is required.'),
 	password: z.string().min(6, 'Password must be at least 6 characters.'),
 })
 
@@ -130,10 +130,10 @@ const LoginPage = () => {
 				<form onSubmit={handleSubmit(onSubmit)} style={{ marginTop: 22 }}>
 					<div style={{ display: 'grid', gap: 14 }}>
 						<Input
-							label="Email"
+							label="Email or Username"
 							name="email"
-							type="email"
-							placeholder="you@example.com"
+							type="text"
+							placeholder="you@example.com or admin"
 							icon={<Mail size={16} />}
 							register={register}
 							error={errors.email?.message}
