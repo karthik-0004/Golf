@@ -1,14 +1,15 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 
 import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import { CreditCard, Heart, Star, Trophy } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import toast from 'react-hot-toast'
+import { Link, useSearchParams } from 'react-router-dom'
 
 import { getCurrentDraw, getMyEntries, getMyWinnings } from '../../api/drawApi'
 import { getApiError } from '../../api/axiosClient'
 import { getScores } from '../../api/scoresApi'
-import { getSubscriptionStatus } from '../../api/subscriptionApi'
+import { confirmCheckoutSession, getSubscriptionStatus } from '../../api/subscriptionApi'
 import { getProfile } from '../../api/userApi'
 import Badge from '../../components/ui/Badge'
 import Button from '../../components/ui/Button'
@@ -33,6 +34,9 @@ const getStatusBadgeVariant = (status) => {
 }
 
 const DashboardPage = () => {
+	const [searchParams, setSearchParams] = useSearchParams()
+	const paymentConfirmedRef = useRef(false)
+
 	const profileQuery = useQuery({
 		queryKey: ['profile'],
 		queryFn: async () => (await getProfile()).data,
@@ -72,6 +76,43 @@ const DashboardPage = () => {
 		queryKey: ['my-entries'],
 		queryFn: async () => (await getMyEntries()).data,
 	})
+
+	useEffect(() => {
+		const payment = searchParams.get('payment')
+		const sessionId = searchParams.get('session_id')
+
+		if (payment !== 'success' || paymentConfirmedRef.current) {
+			return
+		}
+
+		paymentConfirmedRef.current = true
+
+		const confirmPayment = async () => {
+			try {
+				if (sessionId) {
+					await confirmCheckoutSession(sessionId)
+				}
+
+				await Promise.all([
+					subscriptionQuery.refetch(),
+					profileQuery.refetch(),
+				])
+
+				toast.success('Payment successful. Subscription is now active.')
+			} catch (error) {
+				toast.error(getApiError(error))
+			} finally {
+				setSearchParams({}, { replace: true })
+			}
+		}
+
+		confirmPayment()
+	}, [
+		searchParams,
+		setSearchParams,
+		subscriptionQuery,
+		profileQuery,
+	])
 
 	const isLoading =
 		profileQuery.isLoading ||

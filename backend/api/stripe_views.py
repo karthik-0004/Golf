@@ -29,6 +29,30 @@ def _get_value(payload, key, default=None):
         return default
 
 
+def _activate_user_subscription(user, plan_name, subscription_id):
+    if plan_name not in ["monthly", "yearly"]:
+        return
+
+    today = timezone.now().date()
+    duration = timedelta(days=30) if plan_name == "monthly" else timedelta(days=365)
+    user.is_subscriber = True
+    user.subscription_plan = plan_name
+    user.subscription_status = "active"
+    user.subscription_start_date = today
+    user.subscription_end_date = today + duration
+    user.stripe_subscription_id = subscription_id
+    user.save(
+        update_fields=[
+            "is_subscriber",
+            "subscription_plan",
+            "subscription_status",
+            "subscription_start_date",
+            "subscription_end_date",
+            "stripe_subscription_id",
+        ]
+    )
+
+
 class SubscriptionPlanListView(APIView):
     permission_classes = [AllowAny]
 
@@ -92,7 +116,7 @@ class CreateCheckoutSessionView(APIView):
                 payment_method_types=settings.STRIPE_PAYMENT_METHOD_TYPES,
                 line_items=[{"price": stripe_price_id, "quantity": 1}],
                 mode="subscription",
-                success_url=f"{settings.FRONTEND_URL}/dashboard?payment=success",
+                success_url=f"{settings.FRONTEND_URL}/dashboard?payment=success&session_id={{CHECKOUT_SESSION_ID}}",
                 cancel_url=f"{settings.FRONTEND_URL}/subscribe?payment=cancelled",
                 metadata={"user_id": str(user.id), "plan_name": plan_name},
             )
@@ -142,25 +166,8 @@ class StripeWebhookView(APIView):
             subscription_id = _get_value(data_object, "subscription")
 
             user = User.objects.filter(id=user_id).first()
-            if user and plan_name in ["monthly", "yearly"]:
-                today = timezone.now().date()
-                duration = timedelta(days=30) if plan_name == "monthly" else timedelta(days=365)
-                user.is_subscriber = True
-                user.subscription_plan = plan_name
-                user.subscription_status = "active"
-                user.subscription_start_date = today
-                user.subscription_end_date = today + duration
-                user.stripe_subscription_id = subscription_id
-                user.save(
-                    update_fields=[
-                        "is_subscriber",
-                        "subscription_plan",
-                        "subscription_status",
-                        "subscription_start_date",
-                        "subscription_end_date",
-                        "stripe_subscription_id",
-                    ]
-                )
+            if user:
+                _activate_user_subscription(user, plan_name, subscription_id)
 
         elif event_type == "customer.subscription.deleted":
             subscription_id = _get_value(data_object, "id")
@@ -199,6 +206,79 @@ class StripeWebhookView(APIView):
                 user.save(update_fields=["subscription_end_date", "subscription_status", "is_subscriber"])
 
         return Response({"received": True}, status=status.HTTP_200_OK)
+
+
+class ConfirmCheckoutSessionView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        if not settings.STRIPE_SECRET_KEY:
+            return Response(
+                {"detail": "Stripe is not configured on the server."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+        session_id = request.data.get("session_id")
+        if not session_id:
+            return Response(
+                {"detail": "session_id is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        user = request.user
+
+        try:
+            session = stripe.checkout.Session.retrieve(session_id)
+        except stripe.error.StripeError as exc:
+            message = getattr(getattr(exc, "error", None), "message", None) or str(exc)
+            logger.exception("Stripe checkout confirmation failed for user_id=%s", user.id)
+            return Response(
+                {"detail": f"Unable to confirm checkout session: {message}"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        customer_id = _get_value(session, "customer")
+        metadata = _get_value(session, "metadata", {})
+        metadata_user_id = _get_value(metadata, "user_id")
+
+        if metadata_user_id and str(metadata_user_id) != str(user.id):
+            return Response(
+                {"detail": "This checkout session does not belong to the current user."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        if user.stripe_customer_id and customer_id and user.stripe_customer_id != customer_id:
+            return Response(
+                {"detail": "This checkout session does not match your Stripe customer."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        if not user.stripe_customer_id and customer_id:
+            user.stripe_customer_id = customer_id
+            user.save(update_fields=["stripe_customer_id"])
+
+        session_status = _get_value(session, "status")
+        payment_status = _get_value(session, "payment_status")
+
+        if session_status != "complete" or payment_status not in ["paid", "no_payment_required"]:
+            return Response(
+                {"detail": "Checkout is not completed yet."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        plan_name = _get_value(metadata, "plan_name")
+        subscription_id = _get_value(session, "subscription")
+        _activate_user_subscription(user, plan_name, subscription_id)
+
+        return Response(
+            {
+                "message": "Subscription confirmed.",
+                "is_subscriber": user.is_subscriber,
+                "subscription_plan": user.subscription_plan,
+                "subscription_status": user.subscription_status,
+            },
+            status=status.HTTP_200_OK,
+        )
 
 
 class CancelSubscriptionView(APIView):

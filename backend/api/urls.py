@@ -22,6 +22,7 @@ from .draw_views import (
 )
 from .stripe_views import (
     CancelSubscriptionView,
+    ConfirmCheckoutSessionView,
     CreateCheckoutSessionView,
     StripeWebhookView,
     SubscriptionPlanListView,
@@ -52,6 +53,7 @@ urlpatterns = [
     path("scores/<int:pk>/", GolfScoreUpdateDeleteView.as_view(), name="score-update-delete"),
     path("subscription/plans/", SubscriptionPlanListView.as_view(), name="subscription-plans"),
     path("subscription/checkout/", CreateCheckoutSessionView.as_view(), name="subscription-checkout"),
+    path("subscription/confirm/", ConfirmCheckoutSessionView.as_view(), name="subscription-confirm"),
     path("subscription/webhook/", StripeWebhookView.as_view(), name="subscription-webhook"),
     path("subscription/cancel/", CancelSubscriptionView.as_view(), name="subscription-cancel"),
     path("subscription/status/", SubscriptionStatusView.as_view(), name="subscription-status"),
