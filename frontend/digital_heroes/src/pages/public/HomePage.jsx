@@ -98,8 +98,6 @@ const CountUp = ({ value = 0, prefix = '', suffix = '' }) => {
 const HomePage = () => {
   const {
     data: charitiesData,
-    isLoading: charitiesLoading,
-    isError: charitiesError,
   } = useQuery({
     queryKey: ['charities-featured'],
     queryFn: async () => {
@@ -115,12 +113,6 @@ const HomePage = () => {
       return response.data
     },
   })
-
-  useEffect(() => {
-    if (charitiesError) {
-      toast.error('Unable to load featured charities right now.')
-    }
-  }, [charitiesError])
 
   const featuredCharities = useMemo(() => {
     if (!Array.isArray(charitiesData)) return []
@@ -321,17 +313,8 @@ const HomePage = () => {
           </div>
 
           <div className="charity-grid">
-            {charitiesLoading
-              ? [1, 2, 3].map((idx) => (
-                  <article key={idx} className="charity-card">
-                    <div className="charity-image skeleton" />
-                    <div className="skeleton" style={{ height: 18, borderRadius: 8, width: '64%', marginBottom: 10 }} />
-                    <div className="skeleton" style={{ height: 14, borderRadius: 8, width: '100%', marginBottom: 8 }} />
-                    <div className="skeleton" style={{ height: 14, borderRadius: 8, width: '84%' }} />
-                  </article>
-                ))
-              : (featuredCharities.length ? featuredCharities : sampleCharities).map((charity) => (
-                  <article key={charity.slug} className="charity-card">
+            {(featuredCharities.length ? featuredCharities : sampleCharities).map((charity) => (
+                  <article key={charity.slug || charity.name} className="charity-card">
                     <div className="charity-image">
                       {getCharityImage(charity) ? (
                         <img
