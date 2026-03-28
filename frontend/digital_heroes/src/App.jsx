@@ -37,7 +37,7 @@ const queryClient = new QueryClient({
       retry: 1,
     },
   },
-})
+});
 
 [
   ['admin-analytics'],
