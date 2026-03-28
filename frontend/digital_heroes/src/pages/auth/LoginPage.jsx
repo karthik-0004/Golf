@@ -11,7 +11,7 @@ import { z } from 'zod'
 
 import { loginUser } from '../../api/authApi'
 import { getApiError } from '../../api/axiosClient'
-import { getCurrentDraw, getMyEntries, getMyWinnings } from '../../api/drawApi'
+import { getCurrentDraw, getMyEntries, getMyWinnings, adminGetAnalytics, adminGetDraws } from '../../api/drawApi'
 import { getScores } from '../../api/scoresApi'
 import { getSubscriptionStatus } from '../../api/subscriptionApi'
 import { getProfile } from '../../api/userApi'
@@ -55,7 +55,7 @@ const LoginPage = () => {
 
 			storeLogin(user, access, refresh)
 
-			// Prefetch all dashboard data NOW so it's cached before navigation
+			// Fire prefetches in background — navigate immediately for snappy UX
 			if (!user?.is_staff) {
 				queryClient.prefetchQuery({ queryKey: ['profile'], queryFn: async () => (await getProfile()).data })
 				queryClient.prefetchQuery({ queryKey: ['subscription-status'], queryFn: async () => (await getSubscriptionStatus()).data })
@@ -63,6 +63,9 @@ const LoginPage = () => {
 				queryClient.prefetchQuery({ queryKey: ['current-draw'], queryFn: async () => { try { return (await getCurrentDraw()).data } catch { return null } } })
 				queryClient.prefetchQuery({ queryKey: ['my-winnings'], queryFn: async () => (await getMyWinnings()).data })
 				queryClient.prefetchQuery({ queryKey: ['my-entries'], queryFn: async () => (await getMyEntries()).data })
+			} else {
+				queryClient.prefetchQuery({ queryKey: ['admin-analytics'], queryFn: async () => (await adminGetAnalytics()).data })
+				queryClient.prefetchQuery({ queryKey: ['admin-draws'], queryFn: async () => (await adminGetDraws()).data })
 			}
 
 			toast.success('Welcome back!')

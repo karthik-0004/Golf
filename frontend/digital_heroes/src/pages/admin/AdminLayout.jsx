@@ -17,7 +17,6 @@ import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-do
 
 import { logoutUser } from '../../api/authApi'
 import { cancelAllPendingRequests } from '../../api/axiosClient'
-import { getApiError } from '../../api/axiosClient'
 import Button from '../../components/ui/Button'
 import Badge from '../../components/ui/Badge'
 import useAuthStore from '../../store/authStore'
@@ -118,29 +117,23 @@ const AdminLayout = () => {
     }
   }, [isInitialized, navigate, user])
 
-  const handleLogout = async () => {
+  const handleLogout = () => {
     if (isLoggingOut) return
     setIsLoggingOut(true)
 
     const refresh = localStorage.getItem('refresh_token')
 
-    try {
-      if (refresh) {
-        await logoutUser({ refresh })
-      }
-    } catch (error) {
-      const detail = getApiError(error)
-      if (detail) {
-        toast(detail, { icon: 'ℹ️' })
-      }
-    } finally {
-      cancelAllPendingRequests()
-      queryClient.clear()
-      localLogout()
-      toast.success('Logged out successfully.')
-      setMobileOpen(false)
-      setIsLoggingOut(false)
-      navigate('/login', { replace: true })
+    // Clear everything locally FIRST — instant logout
+    cancelAllPendingRequests()
+    queryClient.clear()
+    localLogout()
+    setMobileOpen(false)
+    navigate('/login', { replace: true })
+    toast.success('Logged out successfully.')
+
+    // Fire backend logout in background (don't wait for it)
+    if (refresh) {
+      logoutUser({ refresh }).catch(() => {})
     }
   }
 

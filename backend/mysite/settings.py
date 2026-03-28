@@ -104,7 +104,7 @@ if 'pooler.supabase.com' in db_host and db_port == '6543':
     db_port = '5432'
 
 db_sslmode = os.getenv('DB_SSLMODE', 'require')
-db_connect_timeout = int(os.getenv('DB_CONNECT_TIMEOUT', '15'))
+db_connect_timeout = int(os.getenv('DB_CONNECT_TIMEOUT', '30'))
 
 is_placeholder_db_config = (
     db_host.startswith('your_supabase_')

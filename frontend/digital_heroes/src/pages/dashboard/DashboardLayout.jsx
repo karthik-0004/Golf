@@ -18,7 +18,6 @@ import toast from 'react-hot-toast'
 
 import { logoutUser } from '../../api/authApi'
 import { cancelAllPendingRequests } from '../../api/axiosClient'
-import { getApiError } from '../../api/axiosClient'
 import Button from '../../components/ui/Button'
 import useAuthStore from '../../store/authStore'
 import './DashboardLayout.css'
@@ -102,29 +101,23 @@ const DashboardLayout = () => {
 
   const initials = useMemo(() => getInitials(user), [user])
 
-  const handleLogout = async () => {
+  const handleLogout = () => {
     if (isLoggingOut) return
     setIsLoggingOut(true)
 
     const refresh = localStorage.getItem('refresh_token')
 
-    try {
-      if (refresh) {
-        await logoutUser({ refresh })
-      }
-    } catch (error) {
-      const detail = getApiError(error)
-      if (detail) {
-        toast(detail, { icon: 'ℹ️' })
-      }
-    } finally {
-      cancelAllPendingRequests()
-      queryClient.clear()
-      localLogout()
-      toast.success('Logged out successfully.')
-      setIsLoggingOut(false)
-      navigate('/login', { replace: true })
-      setMobileOpen(false)
+    // Clear everything locally FIRST — instant logout
+    cancelAllPendingRequests()
+    queryClient.clear()
+    localLogout()
+    setMobileOpen(false)
+    navigate('/login', { replace: true })
+    toast.success('Logged out successfully.')
+
+    // Fire backend logout in background (don't wait for it)
+    if (refresh) {
+      logoutUser({ refresh }).catch(() => {})
     }
   }
 

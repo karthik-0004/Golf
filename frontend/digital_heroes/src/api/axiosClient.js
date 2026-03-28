@@ -52,10 +52,22 @@ const extractErrorMessage = (payload) => {
   return null
 }
 
-export const getApiError = (error) =>
-  extractErrorMessage(error?.response?.data) ||
-  error?.message ||
-  'Something went wrong'
+export const getApiError = (error) => {
+  const data = error?.response?.data
+  const status = error?.response?.status
+
+  // Server returned HTML (e.g. 500 error page) — never show raw HTML to user
+  if (data != null) {
+    const str = typeof data === 'string' ? data : (typeof data === 'object' ? JSON.stringify(data) : String(data))
+    const lower = str.toLowerCase()
+    if (lower.includes('<!doctype') || lower.includes('<html') || lower.includes('server error')) {
+      if (status === 500 || status >= 500) return 'Server is waking up — please wait a moment and try again.'
+      return 'Something went wrong on the server. Please try again.'
+    }
+  }
+
+  return extractErrorMessage(data) || error?.message || 'Something went wrong'
+}
 
 const axiosClient = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
