@@ -1,4 +1,5 @@
 from datetime import timedelta
+import logging
 
 import stripe
 from django.conf import settings
@@ -14,6 +15,7 @@ from .models import SubscriptionPlan, User
 from .serializers import CreateSubscriptionSerializer, SubscriptionPlanSerializer
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
+logger = logging.getLogger(__name__)
 
 
 def _get_value(payload, key, default=None):
@@ -40,6 +42,12 @@ class CreateCheckoutSessionView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
+        if not settings.STRIPE_SECRET_KEY:
+            return Response(
+                {"detail": "Stripe is not configured on the server."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
         serializer = CreateSubscriptionSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         plan_name = serializer.validated_data["plan_name"]
@@ -51,24 +59,56 @@ class CreateCheckoutSessionView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        user = request.user
-        if not user.stripe_customer_id:
-            customer = stripe.Customer.create(
-                email=user.email,
-                name=f"{user.first_name} {user.last_name}".strip() or user.email,
-            )
-            user.stripe_customer_id = customer["id"]
-            user.save(update_fields=["stripe_customer_id"])
+        fallback_price_id_map = {
+            "monthly": settings.STRIPE_PRICE_ID_MONTHLY,
+            "yearly": settings.STRIPE_PRICE_ID_YEARLY,
+        }
+        stripe_price_id = fallback_price_id_map.get(plan_name) or plan.stripe_price_id
 
-        session = stripe.checkout.Session.create(
-            customer=user.stripe_customer_id,
-            payment_method_types=["card"],
-            line_items=[{"price": plan.stripe_price_id, "quantity": 1}],
-            mode="subscription",
-            success_url=f"{settings.FRONTEND_URL}/dashboard?payment=success",
-            cancel_url=f"{settings.FRONTEND_URL}/subscribe?payment=cancelled",
-            metadata={"user_id": str(user.id), "plan_name": plan_name},
-        )
+        if not stripe_price_id:
+            return Response(
+                {"detail": "Stripe price ID is missing for the selected plan."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+        if stripe_price_id in {"price_monthly_test", "price_yearly_test"}:
+            return Response(
+                {"detail": "Stripe price ID is still set to a placeholder value on the server."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+        user = request.user
+        try:
+            if not user.stripe_customer_id:
+                customer = stripe.Customer.create(
+                    email=user.email,
+                    name=f"{user.first_name} {user.last_name}".strip() or user.email,
+                )
+                user.stripe_customer_id = customer["id"]
+                user.save(update_fields=["stripe_customer_id"])
+
+            session = stripe.checkout.Session.create(
+                customer=user.stripe_customer_id,
+                automatic_payment_methods={"enabled": True},
+                line_items=[{"price": stripe_price_id, "quantity": 1}],
+                mode="subscription",
+                success_url=f"{settings.FRONTEND_URL}/dashboard?payment=success",
+                cancel_url=f"{settings.FRONTEND_URL}/subscribe?payment=cancelled",
+                metadata={"user_id": str(user.id), "plan_name": plan_name},
+            )
+        except stripe.error.StripeError as exc:
+            message = getattr(getattr(exc, "error", None), "message", None) or str(exc)
+            logger.exception("Stripe checkout creation failed for user_id=%s plan=%s", user.id, plan_name)
+            return Response(
+                {"detail": f"Stripe checkout failed: {message}"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        except Exception:
+            logger.exception("Unexpected checkout failure for user_id=%s plan=%s", user.id, plan_name)
+            return Response(
+                {"detail": "Unable to create checkout session right now."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
         return Response({"session_url": session.url}, status=status.HTTP_200_OK)
 
