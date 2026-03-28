@@ -30,6 +30,7 @@ const LoginPage = () => {
 	const storeLogin = useAuthStore((state) => state.login)
 	const [isSubmitting, setIsSubmitting] = useState(false)
 	const [loginError, setLoginError] = useState('')
+	const [notRegistered, setNotRegistered] = useState(false)
 
 	const {
 		register,
@@ -42,6 +43,7 @@ const LoginPage = () => {
 
 	const onSubmit = async (values) => {
 		setLoginError('')
+		setNotRegistered(false)
 		setIsSubmitting(true)
 		try {
 			const response = await loginUser(values)
@@ -72,9 +74,19 @@ const LoginPage = () => {
 			navigate(user?.is_staff ? '/admin/dashboard' : '/dashboard')
 		} catch (error) {
 			const status = error?.response?.status
+			const data = error?.response?.data
 			const errorMessage = getApiError(error)
 
-			if (status === 401 || status === 400) {
+			// Check if backend returned a "not_registered" error
+			const isNotRegistered = data?.not_registered ||
+				(typeof data === 'object' && data !== null && Object.values(data).some(
+					v => (Array.isArray(v) ? v : [v]).some(s => typeof s === 'string' && s.toLowerCase().includes('register first'))
+				))
+
+			if (isNotRegistered) {
+				setNotRegistered(true)
+				setLoginError('')
+			} else if (status === 401 || status === 400) {
 				setLoginError('Incorrect email/username or password. Please check your credentials and try again.')
 			} else {
 				setLoginError(errorMessage || 'Something went wrong. Please try again.')
@@ -155,6 +167,38 @@ const LoginPage = () => {
 
 				<h1 style={{ fontSize: 34, lineHeight: 1.1 }}>Welcome Back</h1>
 				<p style={{ marginTop: 8, color: 'var(--color-text-secondary)' }}>Sign in to your account</p>
+
+				{notRegistered && (
+					<motion.div
+						initial={{ opacity: 0, y: -8 }}
+						animate={{ opacity: 1, y: 0 }}
+						transition={{ duration: 0.25 }}
+						style={{
+							marginTop: 16,
+							padding: '14px 16px',
+							background: 'rgba(59, 130, 246, 0.1)',
+							border: '1px solid rgba(59, 130, 246, 0.3)',
+							borderRadius: 'var(--radius-md)',
+							display: 'flex',
+							alignItems: 'flex-start',
+							gap: 10,
+						}}
+					>
+						<span style={{ fontSize: 20, lineHeight: 1, flexShrink: 0, marginTop: 1 }}>📋</span>
+						<div style={{ fontSize: 13, lineHeight: 1.5 }}>
+							<p style={{ color: '#60a5fa', fontWeight: 600, marginBottom: 4 }}>
+								Account not found
+							</p>
+							<p style={{ color: 'var(--color-text-secondary)' }}>
+								No account exists with this email/username. Please{' '}
+								<Link to="/register" style={{ color: 'var(--color-accent)', fontWeight: 600, textDecoration: 'underline' }}>
+									register first
+								</Link>{' '}
+								and then come back to login.
+							</p>
+						</div>
+					</motion.div>
+				)}
 
 				{loginError && (
 					<motion.div

@@ -53,6 +53,17 @@ class UserLoginSerializer(serializers.Serializer):
         if not identifier:
             raise serializers.ValidationError({"email": "Email or username is required."})
 
+        # Check if a user with this email or username actually exists
+        from django.db.models import Q
+        user_exists = User.objects.filter(
+            Q(email__iexact=identifier) | Q(username__iexact=identifier)
+        ).exists()
+
+        if not user_exists:
+            raise serializers.ValidationError({
+                "not_registered": "No account found with this email/username. Please register first."
+            })
+
         user = authenticate(email=identifier, password=password)
         if user is None:
             user = authenticate(username=identifier, password=password)
