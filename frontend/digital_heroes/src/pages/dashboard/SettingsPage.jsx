@@ -165,6 +165,12 @@ const SettingsPage = () => {
 			toast.error('Please select an image first.')
 			return
 		}
+		
+		if (profileImageFile.size > 5 * 1024 * 1024) {
+			toast.error('File size exceeds 5MB limit. Please upload a smaller image.')
+			return
+		}
+
 		const formData = new FormData()
 		formData.append('profile_picture', profileImageFile)
 		updateProfileMutation.mutate(formData)

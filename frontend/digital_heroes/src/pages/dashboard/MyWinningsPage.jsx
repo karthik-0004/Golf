@@ -73,6 +73,11 @@ const MyWinningsPage = () => {
 			return
 		}
 
+		if (selectedFile.size > 5 * 1024 * 1024) {
+			toast.error('File size exceeds 5MB limit. Please upload a smaller image.')
+			return
+		}
+
 		const formData = new FormData()
 		formData.append('proof_screenshot', selectedFile)
 		proofMutation.mutate({ id: winner.id, formData })
