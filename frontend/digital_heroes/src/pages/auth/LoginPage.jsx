@@ -1,5 +1,6 @@
 import { useState } from 'react'
 
+import { useQueryClient } from '@tanstack/react-query'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { motion } from 'framer-motion'
 import { Lock, Mail } from 'lucide-react'
@@ -10,6 +11,10 @@ import { z } from 'zod'
 
 import { loginUser } from '../../api/authApi'
 import { getApiError } from '../../api/axiosClient'
+import { getCurrentDraw, getMyEntries, getMyWinnings } from '../../api/drawApi'
+import { getScores } from '../../api/scoresApi'
+import { getSubscriptionStatus } from '../../api/subscriptionApi'
+import { getProfile } from '../../api/userApi'
 import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
 import useAuthStore from '../../store/authStore'
@@ -21,6 +26,7 @@ const loginSchema = z.object({
 
 const LoginPage = () => {
 	const navigate = useNavigate()
+	const queryClient = useQueryClient()
 	const storeLogin = useAuthStore((state) => state.login)
 	const [isSubmitting, setIsSubmitting] = useState(false)
 	const [loginError, setLoginError] = useState('')
@@ -48,6 +54,17 @@ const LoginPage = () => {
 			}
 
 			storeLogin(user, access, refresh)
+
+			// Prefetch all dashboard data NOW so it's cached before navigation
+			if (!user?.is_staff) {
+				queryClient.prefetchQuery({ queryKey: ['profile'], queryFn: async () => (await getProfile()).data })
+				queryClient.prefetchQuery({ queryKey: ['subscription-status'], queryFn: async () => (await getSubscriptionStatus()).data })
+				queryClient.prefetchQuery({ queryKey: ['my-scores'], queryFn: async () => (await getScores()).data })
+				queryClient.prefetchQuery({ queryKey: ['current-draw'], queryFn: async () => { try { return (await getCurrentDraw()).data } catch { return null } } })
+				queryClient.prefetchQuery({ queryKey: ['my-winnings'], queryFn: async () => (await getMyWinnings()).data })
+				queryClient.prefetchQuery({ queryKey: ['my-entries'], queryFn: async () => (await getMyEntries()).data })
+			}
+
 			toast.success('Welcome back!')
 			navigate(user?.is_staff ? '/admin/dashboard' : '/dashboard')
 		} catch (error) {

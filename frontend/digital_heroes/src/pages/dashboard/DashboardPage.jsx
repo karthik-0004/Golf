@@ -15,7 +15,7 @@ import useAuthStore from '../../store/authStore'
 import Badge from '../../components/ui/Badge'
 import Button from '../../components/ui/Button'
 import Card from '../../components/ui/Card'
-import Spinner from '../../components/ui/Spinner'
+import Skeleton from '../../components/ui/Skeleton'
 import { getCharityImage } from '../../utils/charityImages'
 import { formatCurrency, formatDate, getMonthName, getSubscriptionStatusColor } from '../../utils/formatters'
 import './dashboard-pages.css'
@@ -33,6 +33,41 @@ const getStatusBadgeVariant = (status) => {
 	if (color === 'red') return 'error'
 	return 'default'
 }
+
+/* ─── Skeleton placeholders for progressive rendering ─── */
+const CardSkeleton = () => (
+	<Card padding={18}>
+		<Skeleton width={100} height={14} />
+		<div style={{ marginTop: 10 }}><Skeleton width={70} height={28} /></div>
+		<div style={{ marginTop: 10 }}><Skeleton width={140} height={12} /></div>
+	</Card>
+)
+
+const ScoresSkeleton = () => (
+	<div className="dashboard-pill-row">
+		{[1, 2, 3, 4, 5].map((i) => (
+			<div key={i} className="dashboard-score-pill">
+				<Skeleton width={40} height={28} borderRadius={6} />
+				<div style={{ marginTop: 6 }}><Skeleton width={60} height={10} /></div>
+			</div>
+		))}
+	</div>
+)
+
+const DrawSkeleton = () => (
+	<Card padding={20}>
+		<Skeleton width={180} height={22} />
+		<div style={{ marginTop: 12 }}><Skeleton width="100%" height={14} count={3} /></div>
+	</Card>
+)
+
+const CharitySkeleton = () => (
+	<Card padding={18}>
+		<Skeleton width="100%" height={160} borderRadius={12} />
+		<div style={{ marginTop: 12 }}><Skeleton width={140} height={18} /></div>
+		<div style={{ marginTop: 8 }}><Skeleton width={100} height={12} /></div>
+	</Card>
+)
 
 const DashboardPage = () => {
 	const [searchParams, setSearchParams] = useSearchParams()
@@ -121,19 +156,12 @@ const DashboardPage = () => {
 		setUser,
 	])
 
-	const isLoading =
-		profileQuery.isLoading ||
-		subscriptionQuery.isLoading ||
-		scoresQuery.isLoading ||
-		drawQuery.isLoading ||
-		winningsQuery.isLoading ||
-		entriesQuery.isLoading
-
-	const hasError =
-		profileQuery.isError ||
-		subscriptionQuery.isError ||
-		scoresQuery.isError ||
-		winningsQuery.isError ||
+	// NO longer blocking on ALL queries — we render progressively
+	const hasAllErrors =
+		profileQuery.isError &&
+		subscriptionQuery.isError &&
+		scoresQuery.isError &&
+		winningsQuery.isError &&
 		entriesQuery.isError
 
 	const refetchAll = () => {
@@ -179,15 +207,7 @@ const DashboardPage = () => {
 	const currentDrawWin = winnings.find((item) => item?.draw?.id === draw?.id)
 	const selectedCharityImage = getCharityImage(profile?.selected_charity)
 
-	if (isLoading) {
-		return (
-			<div className="dashboard-loading">
-				<Spinner size="lg" />
-			</div>
-		)
-	}
-
-	if (hasError) {
+	if (hasAllErrors) {
 		return (
 			<div className="dashboard-error">
 				<p>Unable to load your dashboard right now.</p>
@@ -198,61 +218,77 @@ const DashboardPage = () => {
 
 	return (
 		<motion.div className="dashboard-page" {...pageMotion}>
+			{/* ─── Header: always show instantly ─── */}
 			<header className="dashboard-header">
-				<h1>Welcome back, {firstName} 👋</h1>
+				<h1>
+					{profileQuery.isLoading
+						? <Skeleton width={260} height={34} />
+						: <>Welcome back, {firstName} 👋</>
+					}
+				</h1>
 				<p>{prettyDate}</p>
 			</header>
 
+			{/* ─── Stats cards: show skeletons per-card ─── */}
 			<section className="dashboard-grid-4">
-				<Card padding={18}>
-					<p className="dashboard-card-title">
-						<CreditCard size={16} />
-						<span>Subscription</span>
-					</p>
-					<Badge variant={getStatusBadgeVariant(subscription.subscription_status)}>
-						{subscription.subscription_status || 'inactive'}
-					</Badge>
-					<p className="dashboard-subtle" style={{ marginTop: 10 }}>
-						{(subscription.subscription_plan || 'No plan').toString().replace(/^./, (s) => s.toUpperCase())}
-						{subscription.subscription_end_date ? ` · Renews ${formatDate(subscription.subscription_end_date)}` : ''}
-					</p>
-					{!subscription.is_subscriber && !profile.is_staff ? (
-						<Link className="dashboard-link-inline" to="/subscribe">
-							Subscribe Now
-						</Link>
-					) : null}
-				</Card>
+				{subscriptionQuery.isLoading ? <CardSkeleton /> : (
+					<Card padding={18}>
+						<p className="dashboard-card-title">
+							<CreditCard size={16} />
+							<span>Subscription</span>
+						</p>
+						<Badge variant={getStatusBadgeVariant(subscription.subscription_status)}>
+							{subscription.subscription_status || 'inactive'}
+						</Badge>
+						<p className="dashboard-subtle" style={{ marginTop: 10 }}>
+							{(subscription.subscription_plan || 'No plan').toString().replace(/^./, (s) => s.toUpperCase())}
+							{subscription.subscription_end_date ? ` · Renews ${formatDate(subscription.subscription_end_date)}` : ''}
+						</p>
+						{!subscription.is_subscriber && !profile.is_staff ? (
+							<Link className="dashboard-link-inline" to="/subscribe">
+								Subscribe Now
+							</Link>
+						) : null}
+					</Card>
+				)}
 
-				<Card padding={18}>
-					<p className="dashboard-card-title">
-						<Trophy size={16} />
-						<span>Draw Entries</span>
-					</p>
-					<p className="dashboard-big-value">{entries.length}</p>
-					<p className="dashboard-subtle">
-						Next draw: {new Date(now.getFullYear(), now.getMonth() + 1, 0).toLocaleDateString('en-GB', { day: 'numeric', month: 'long' })}
-					</p>
-				</Card>
+				{entriesQuery.isLoading ? <CardSkeleton /> : (
+					<Card padding={18}>
+						<p className="dashboard-card-title">
+							<Trophy size={16} />
+							<span>Draw Entries</span>
+						</p>
+						<p className="dashboard-big-value">{entries.length}</p>
+						<p className="dashboard-subtle">
+							Next draw: {new Date(now.getFullYear(), now.getMonth() + 1, 0).toLocaleDateString('en-GB', { day: 'numeric', month: 'long' })}
+						</p>
+					</Card>
+				)}
 
-				<Card padding={18}>
-					<p className="dashboard-card-title">
-						<Star size={16} />
-						<span>Total Won</span>
-					</p>
-					<p className="dashboard-big-value">{formatCurrency(totalPaid)}</p>
-					<p className="dashboard-subtle">across {winnings.length} draws</p>
-				</Card>
+				{winningsQuery.isLoading ? <CardSkeleton /> : (
+					<Card padding={18}>
+						<p className="dashboard-card-title">
+							<Star size={16} />
+							<span>Total Won</span>
+						</p>
+						<p className="dashboard-big-value">{formatCurrency(totalPaid)}</p>
+						<p className="dashboard-subtle">across {winnings.length} draws</p>
+					</Card>
+				)}
 
-				<Card padding={18}>
-					<p className="dashboard-card-title">
-						<Heart size={16} />
-						<span>Charity Impact</span>
-					</p>
-					<p className="dashboard-big-value">{formatCurrency(contributionAmount)}</p>
-					<p className="dashboard-subtle">{profile?.selected_charity?.name || 'No charity selected'}</p>
-				</Card>
+				{(profileQuery.isLoading || subscriptionQuery.isLoading) ? <CardSkeleton /> : (
+					<Card padding={18}>
+						<p className="dashboard-card-title">
+							<Heart size={16} />
+							<span>Charity Impact</span>
+						</p>
+						<p className="dashboard-big-value">{formatCurrency(contributionAmount)}</p>
+						<p className="dashboard-subtle">{profile?.selected_charity?.name || 'No charity selected'}</p>
+					</Card>
+				)}
 			</section>
 
+			{/* ─── Scores section ─── */}
 			<section>
 				<div className="dashboard-section-head" style={{ marginBottom: 10 }}>
 					<h2>My Latest Scores</h2>
@@ -261,7 +297,7 @@ const DashboardPage = () => {
 					</Link>
 				</div>
 
-				{scores.length ? (
+				{scoresQuery.isLoading ? <ScoresSkeleton /> : scores.length ? (
 					<div className="dashboard-pill-row">
 						{scores.slice(0, 5).map((item) => (
 							<div key={item.id} className="dashboard-score-pill">
@@ -284,9 +320,10 @@ const DashboardPage = () => {
 				)}
 			</section>
 
+			{/* ─── Draw section ─── */}
 			<section>
 				<h2 style={{ marginBottom: 10 }}>This Month&apos;s Draw</h2>
-				{draw ? (
+				{drawQuery.isLoading ? <DrawSkeleton /> : draw ? (
 					<Card padding={20}>
 						<div className="dashboard-section-head" style={{ marginBottom: 8 }}>
 							<h3 style={{ fontSize: 22 }}>
@@ -371,9 +408,10 @@ const DashboardPage = () => {
 				)}
 			</section>
 
+			{/* ─── Charity section ─── */}
 			<section>
 				<h2 style={{ marginBottom: 10 }}>Your Charity</h2>
-				{profile?.selected_charity ? (
+				{profileQuery.isLoading ? <CharitySkeleton /> : profile?.selected_charity ? (
 					<Card padding={18}>
 						{selectedCharityImage ? (
 							<img
