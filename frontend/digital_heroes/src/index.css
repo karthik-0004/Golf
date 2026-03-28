@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+/* Font loaded via preload in index.html for faster initial paint */
 
 :root {
   --color-primary: #0A0A0A;

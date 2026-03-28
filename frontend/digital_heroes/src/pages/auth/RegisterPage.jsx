@@ -55,6 +55,7 @@ const RegisterPage = () => {
 	const storeLogin = useAuthStore((state) => state.login)
 	const [isSubmitting, setIsSubmitting] = useState(false)
 	const [duplicateEmailError, setDuplicateEmailError] = useState('')
+	const [registerError, setRegisterError] = useState('')
 
 	const {
 		register,
@@ -89,6 +90,7 @@ const RegisterPage = () => {
 
 	const onSubmit = async (values) => {
 		setDuplicateEmailError('')
+		setRegisterError('')
 		clearErrors('email')
 		setIsSubmitting(true)
 		try {
@@ -120,7 +122,8 @@ const RegisterPage = () => {
 				setError('email', { type: 'server', message })
 				return
 			}
-			toast.error(getApiError(error))
+			const errorMessage = getApiError(error)
+			setRegisterError(errorMessage || 'Something went wrong. Please try again.')
 		} finally {
 			setIsSubmitting(false)
 		}
@@ -199,6 +202,29 @@ const RegisterPage = () => {
 				<p style={{ marginTop: 8, color: 'var(--color-text-secondary)' }}>
 					Join the community. Play. Win. Give.
 				</p>
+
+				{registerError && (
+					<motion.div
+						initial={{ opacity: 0, y: -8 }}
+						animate={{ opacity: 1, y: 0 }}
+						transition={{ duration: 0.25 }}
+						style={{
+							marginTop: 16,
+							padding: '12px 14px',
+							background: 'rgba(239, 68, 68, 0.1)',
+							border: '1px solid rgba(239, 68, 68, 0.3)',
+							borderRadius: 'var(--radius-md)',
+							display: 'flex',
+							alignItems: 'center',
+							gap: 10,
+						}}
+					>
+						<span style={{ fontSize: 18, lineHeight: 1, flexShrink: 0 }}>⚠️</span>
+						<p style={{ color: 'var(--color-error)', fontSize: 13, lineHeight: 1.4 }}>
+							{registerError}
+						</p>
+					</motion.div>
+				)}
 
 				<form onSubmit={handleSubmit(onSubmit)} style={{ marginTop: 22 }}>
 					<div style={{ display: 'grid', gap: 12 }}>

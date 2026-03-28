@@ -23,6 +23,7 @@ const LoginPage = () => {
 	const navigate = useNavigate()
 	const storeLogin = useAuthStore((state) => state.login)
 	const [isSubmitting, setIsSubmitting] = useState(false)
+	const [loginError, setLoginError] = useState('')
 
 	const {
 		register,
@@ -34,6 +35,7 @@ const LoginPage = () => {
 	})
 
 	const onSubmit = async (values) => {
+		setLoginError('')
 		setIsSubmitting(true)
 		try {
 			const response = await loginUser(values)
@@ -49,7 +51,14 @@ const LoginPage = () => {
 			toast.success('Welcome back!')
 			navigate(user?.is_staff ? '/admin/dashboard' : '/dashboard')
 		} catch (error) {
-			toast.error(getApiError(error))
+			const status = error?.response?.status
+			const errorMessage = getApiError(error)
+
+			if (status === 401 || status === 400) {
+				setLoginError('Incorrect email/username or password. Please check your credentials and try again.')
+			} else {
+				setLoginError(errorMessage || 'Something went wrong. Please try again.')
+			}
 		} finally {
 			setIsSubmitting(false)
 		}
@@ -126,6 +135,29 @@ const LoginPage = () => {
 
 				<h1 style={{ fontSize: 34, lineHeight: 1.1 }}>Welcome Back</h1>
 				<p style={{ marginTop: 8, color: 'var(--color-text-secondary)' }}>Sign in to your account</p>
+
+				{loginError && (
+					<motion.div
+						initial={{ opacity: 0, y: -8 }}
+						animate={{ opacity: 1, y: 0 }}
+						transition={{ duration: 0.25 }}
+						style={{
+							marginTop: 16,
+							padding: '12px 14px',
+							background: 'rgba(239, 68, 68, 0.1)',
+							border: '1px solid rgba(239, 68, 68, 0.3)',
+							borderRadius: 'var(--radius-md)',
+							display: 'flex',
+							alignItems: 'center',
+							gap: 10,
+						}}
+					>
+						<span style={{ fontSize: 18, lineHeight: 1, flexShrink: 0 }}>⚠️</span>
+						<p style={{ color: 'var(--color-error)', fontSize: 13, lineHeight: 1.4 }}>
+							{loginError}
+						</p>
+					</motion.div>
+				)}
 
 				<form onSubmit={handleSubmit(onSubmit)} style={{ marginTop: 22 }}>
 					<div style={{ display: 'grid', gap: 14 }}>

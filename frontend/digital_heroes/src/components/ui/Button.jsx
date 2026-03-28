@@ -112,7 +112,7 @@ const Button = ({
       }}
     >
       {loading ? <Spinner size="sm" /> : icon}
-      <span>{loading ? 'Loading...' : children}</span>
+      <span>{loading ? 'Please wait...' : children}</span>
     </button>
   )
 }

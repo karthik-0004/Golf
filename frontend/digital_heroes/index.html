@@ -4,9 +4,54 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>digital_heroes</title>
+    <meta name="description" content="Digital Heroes Golf - Play, Win, and Give Back to Charity" />
+    <title>Digital Heroes</title>
+    <!-- Preload the Inter font for faster rendering -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" />
+    <style>
+      /* Instant loading screen - rendered before any JS loads */
+      #initial-loader {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        gap: 20px;
+        background: #0A0A0A;
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      }
+      #initial-loader .loader-brand {
+        font-size: 22px;
+        font-weight: 700;
+        color: #fff;
+        letter-spacing: -0.3px;
+      }
+      #initial-loader .loader-accent {
+        color: #C8F544;
+      }
+      #initial-loader .loader-spinner {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        border: 3px solid rgba(200,245,68,0.15);
+        border-top-color: #C8F544;
+        animation: loader-spin 0.75s linear infinite;
+      }
+      @keyframes loader-spin {
+        to { transform: rotate(360deg); }
+      }
+    </style>
   </head>
   <body>
+    <div id="initial-loader">
+      <span class="loader-brand">⛳ Digital <span class="loader-accent">Heroes</span></span>
+      <div class="loader-spinner"></div>
+    </div>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
