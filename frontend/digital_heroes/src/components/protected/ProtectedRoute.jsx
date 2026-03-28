@@ -61,6 +61,10 @@ const ProtectedRoute = ({ children, adminOnly = false }) => {
     return <Navigate to="/login" replace />
   }
 
+  if (user?.is_staff) {
+    return <Navigate to="/admin/dashboard" replace />
+  }
+
   return children
 }
 

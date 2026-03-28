@@ -3,7 +3,6 @@ import { useEffect, useMemo, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import {
-  ExternalLink,
   Heart,
   LayoutDashboard,
   LogOut,
@@ -78,11 +77,6 @@ const SidebarContent = ({ user, onLogout, onNavigate, isLoggingOut }) => {
 
       <div className="admin-sidebar-bottom">
         <div className="admin-divider" />
-
-        <Link to="/" className="admin-back-link" onClick={onNavigate}>
-          <ExternalLink size={14} />
-          <span>← Back to Site</span>
-        </Link>
 
         <div className="admin-user-box">
           <p title={fullName}>{fullName}</p>
