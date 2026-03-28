@@ -36,9 +36,11 @@ const SubscribePage = lazy(() => import('./pages/public/SubscribePage'))
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 30 * 1000,
+      staleTime: 5 * 60 * 1000,       // 5 min — data stays fresh across page navigations
+      gcTime: 10 * 60 * 1000,          // 10 min — keep cached data in memory longer
       refetchOnWindowFocus: false,
-      retry: 1,
+      retry: 3,                         // 3 retries before showing error
+      retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 8000), // 1s, 2s, 4s, 8s backoff
     },
   },
 });
@@ -54,9 +56,11 @@ const queryClient = new QueryClient({
   ['admin-charities'],
 ].forEach((queryKey) => {
   queryClient.setQueryDefaults(queryKey, {
-    staleTime: 60 * 1000,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
-    retry: 1,
+    retry: 3,
+    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 8000),
   })
 })
 
