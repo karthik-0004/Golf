@@ -95,6 +95,8 @@ db_user = os.getenv('DB_USER', '')
 db_password = os.getenv('DB_PASSWORD', '')
 db_host = os.getenv('DB_HOST', '')
 db_port = os.getenv('DB_PORT', '5432')
+db_sslmode = os.getenv('DB_SSLMODE', 'require')
+db_connect_timeout = int(os.getenv('DB_CONNECT_TIMEOUT', '15'))
 
 is_placeholder_db_config = (
     db_host.startswith('your_supabase_')
@@ -111,6 +113,10 @@ if db_host and not is_placeholder_db_config:
             'PASSWORD': db_password,
             'HOST': db_host,
             'PORT': db_port,
+            'OPTIONS': {
+                'sslmode': db_sslmode,
+                'connect_timeout': db_connect_timeout,
+            },
         }
     }
 else:
