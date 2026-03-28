@@ -16,11 +16,19 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.conf import settings
+from django.http import JsonResponse
 from django.urls import include, path, re_path
 from django.views.static import serve
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
+
+# Lightweight keep-alive endpoint — no DB, no auth, no middleware overhead
+def health_check(request):
+    return JsonResponse({"status": "ok"})
+
+
 urlpatterns = [
+    path('api/health/', health_check, name='health_check'),
     path('admin/', admin.site.urls),
     path('api/', include('api.urls')),
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
