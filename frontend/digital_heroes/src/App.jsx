@@ -28,6 +28,7 @@ import HomePage from './pages/public/HomePage'
 import HowItWorksPage from './pages/public/HowItWorksPage'
 import SubscribePage from './pages/public/SubscribePage'
 import useAuthStore from './store/authStore'
+import useAuth from './hooks/useAuth'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -69,6 +70,8 @@ const withTransition = (component) => (
 )
 
 function App() {
+  useAuth()
+
   useEffect(() => {
     useAuthStore.getState().initializeAuth()
   }, [])

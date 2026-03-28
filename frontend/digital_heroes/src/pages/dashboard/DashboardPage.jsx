@@ -11,6 +11,7 @@ import { getApiError } from '../../api/axiosClient'
 import { getScores } from '../../api/scoresApi'
 import { confirmCheckoutSession, getSubscriptionStatus } from '../../api/subscriptionApi'
 import { getProfile } from '../../api/userApi'
+import useAuthStore from '../../store/authStore'
 import Badge from '../../components/ui/Badge'
 import Button from '../../components/ui/Button'
 import Card from '../../components/ui/Card'
@@ -36,6 +37,7 @@ const getStatusBadgeVariant = (status) => {
 const DashboardPage = () => {
 	const [searchParams, setSearchParams] = useSearchParams()
 	const paymentConfirmedRef = useRef(false)
+	const setUser = useAuthStore((state) => state.setUser)
 
 	const profileQuery = useQuery({
 		queryKey: ['profile'],
@@ -93,10 +95,14 @@ const DashboardPage = () => {
 					await confirmCheckoutSession(sessionId)
 				}
 
-				await Promise.all([
+				const [_, profileRes] = await Promise.all([
 					subscriptionQuery.refetch(),
 					profileQuery.refetch(),
 				])
+
+				if (profileRes.data) {
+					setUser(profileRes.data)
+				}
 
 				toast.success('Payment successful. Subscription is now active.')
 			} catch (error) {
@@ -112,6 +118,7 @@ const DashboardPage = () => {
 		setSearchParams,
 		subscriptionQuery,
 		profileQuery,
+		setUser,
 	])
 
 	const isLoading =

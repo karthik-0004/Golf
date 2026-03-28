@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom'
 import { getCharities } from '../../api/charityApi'
 import { cancelSubscription, getPlans, getSubscriptionStatus } from '../../api/subscriptionApi'
 import { getProfile, selectCharity, updateProfile } from '../../api/userApi'
+import useAuthStore from '../../store/authStore'
 import Badge from '../../components/ui/Badge'
 import Button from '../../components/ui/Button'
 import Card from '../../components/ui/Card'
@@ -50,6 +51,7 @@ const SettingsPage = () => {
 	const [searchTerm, setSearchTerm] = useState('')
 	const [debouncedSearch, setDebouncedSearch] = useState('')
 	const [contributionPercent, setContributionPercent] = useState(10)
+	const setUser = useAuthStore((state) => state.setUser)
 
 	const { register, handleSubmit, reset, formState: { errors } } = useForm()
 
@@ -80,6 +82,7 @@ const SettingsPage = () => {
 
 	useEffect(() => {
 		if (!profileQuery.data) return
+		setUser(profileQuery.data)
 		reset({
 			first_name: profileQuery.data.first_name || '',
 			last_name: profileQuery.data.last_name || '',
@@ -88,7 +91,7 @@ const SettingsPage = () => {
 			email: profileQuery.data.email || '',
 		})
 		setContributionPercent(Number(profileQuery.data.charity_contribution_percentage || 10))
-	}, [profileQuery.data, reset])
+	}, [profileQuery.data, reset, setUser])
 
 	const updateProfileMutation = useMutation({
 		mutationFn: (payload) => updateProfile(payload),
