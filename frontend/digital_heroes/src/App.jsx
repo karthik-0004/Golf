@@ -76,12 +76,15 @@ const PageLoader = () => (
       <p
         style={{
           marginTop: 16,
-          color: 'var(--color-text-secondary)',
-          fontSize: 14,
-          fontWeight: 500,
+          color: 'var(--color-accent)',
+          fontSize: 18,
+          fontWeight: 600,
         }}
       >
-        Loading...
+        Please wait, website has cold started.
+      </p>
+      <p style={{ marginTop: 8, color: 'var(--color-text-secondary)', fontSize: 14 }}>
+        This might take up to 2 minutes to fully awake...
       </p>
     </div>
   </div>

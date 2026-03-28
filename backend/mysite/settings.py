@@ -95,6 +95,14 @@ db_user = os.getenv('DB_USER', '')
 db_password = os.getenv('DB_PASSWORD', '')
 db_host = os.getenv('DB_HOST', '')
 db_port = os.getenv('DB_PORT', '5432')
+
+# Render Deployment Fix: 
+# Supabase connection string often provides port 6543 (Transaction pooler phase).
+# Django ORM and specifically `manage.py migrate` MUST use Session pooler (5432)
+# Otherwise it causes `timeout expired` errors during Render deployments.
+if 'pooler.supabase.com' in db_host and db_port == '6543':
+    db_port = '5432'
+
 db_sslmode = os.getenv('DB_SSLMODE', 'require')
 db_connect_timeout = int(os.getenv('DB_CONNECT_TIMEOUT', '15'))
 

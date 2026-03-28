@@ -34,13 +34,19 @@ const ProtectedRoute = ({ children, adminOnly = false }) => {
           background: '#0A0A0A',
           height: '100vh',
           display: 'flex',
+          flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
           color: '#C8F544',
           fontSize: '18px',
+          textAlign: 'center',
+          padding: '20px'
         }}
       >
-        Loading...
+        <p style={{ fontWeight: 600 }}>Please wait, website has cold started.</p>
+        <p style={{ fontSize: '15px', color: 'var(--color-text-secondary)', marginTop: '8px' }}>
+          This might take up to 2 minutes to fully awake...
+        </p>
       </div>
     )
   }
