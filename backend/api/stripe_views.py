@@ -103,23 +103,37 @@ class CreateCheckoutSessionView(APIView):
 
         user = request.user
         try:
-            if not user.stripe_customer_id:
+            customer_id = user.stripe_customer_id
+            if customer_id and (customer_id.startswith("cus_test_") or customer_id == "cus_test_123"):
+                customer_id = None
+
+            if customer_id:
+                try:
+                    stripe.Customer.retrieve(customer_id)
+                except stripe.error.InvalidRequestError:
+                    customer_id = None
+
+            if not customer_id:
                 customer = stripe.Customer.create(
                     email=user.email,
                     name=f"{user.first_name} {user.last_name}".strip() or user.email,
                 )
-                user.stripe_customer_id = customer["id"]
+                customer_id = customer["id"]
+                user.stripe_customer_id = customer_id
                 user.save(update_fields=["stripe_customer_id"])
 
-            session = stripe.checkout.Session.create(
-                customer=user.stripe_customer_id,
-                payment_method_types=settings.STRIPE_PAYMENT_METHOD_TYPES,
-                line_items=[{"price": stripe_price_id, "quantity": 1}],
-                mode="subscription",
-                success_url=f"{settings.FRONTEND_URL}/dashboard?payment=success&session_id={{CHECKOUT_SESSION_ID}}",
-                cancel_url=f"{settings.FRONTEND_URL}/subscribe?payment=cancelled",
-                metadata={"user_id": str(user.id), "plan_name": plan_name},
-            )
+            checkout_kwargs = {
+                "customer": customer_id,
+                "line_items": [{"price": stripe_price_id, "quantity": 1}],
+                "mode": "subscription",
+                "success_url": f"{settings.FRONTEND_URL}/dashboard?payment=success&session_id={{CHECKOUT_SESSION_ID}}",
+                "cancel_url": f"{settings.FRONTEND_URL}/subscribe?payment=cancelled",
+                "metadata": {"user_id": str(user.id), "plan_name": plan_name},
+            }
+            if settings.STRIPE_PAYMENT_METHOD_TYPES:
+                checkout_kwargs["payment_method_types"] = settings.STRIPE_PAYMENT_METHOD_TYPES
+
+            session = stripe.checkout.Session.create(**checkout_kwargs)
         except stripe.error.StripeError as exc:
             message = getattr(getattr(exc, "error", None), "message", None) or str(exc)
             logger.exception("Stripe checkout creation failed for user_id=%s plan=%s", user.id, plan_name)
