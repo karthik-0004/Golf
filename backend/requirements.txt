@@ -1,4 +1,4 @@
-django
+django>=6.0.0,<6.1
 gunicorn
 whitenoise
 django-cors-headers==4.9.0
